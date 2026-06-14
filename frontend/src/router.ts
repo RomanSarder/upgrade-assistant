@@ -1,5 +1,7 @@
-import { createRouter, createRoute, createRootRoute, redirect } from "@tanstack/react-router";
+import { createRouter, createRoute, createRootRoute } from "@tanstack/react-router";
 import App from "./App";
+import { SignInPage } from "./auth/SignInPage";
+import { VerifyPage } from "./auth/VerifyPage";
 
 const rootRoute = createRootRoute();
 
@@ -12,12 +14,16 @@ const indexRoute = createRoute({
 const signInRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/sign-in",
-  beforeLoad: () => {
-    throw redirect({ to: "/" });
-  },
+  component: SignInPage,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, signInRoute]);
+const verifyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/auth/verify",
+  component: VerifyPage,
+});
+
+const routeTree = rootRoute.addChildren([indexRoute, signInRoute, verifyRoute]);
 
 export const router = createRouter({ routeTree });
 

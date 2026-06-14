@@ -22,9 +22,13 @@ export default fastifyPlugin(async (fastify) => {
     }, async (request) => {
       const { email } = request.body
 
-      const [user] = await fastify.db.insert(users).values({
-        email,
-      }).returning().onConflictDoNothing()
+      const [inserted] = await fastify.db.insert(users).values({ email })
+        .onConflictDoNothing()
+        .returning()
+
+      const user = inserted ?? (
+        await fastify.db.select().from(users).where(eq(users.email, email))
+      )[0]
 
       const magicLinkToken = generateSecureRandomString()
 
