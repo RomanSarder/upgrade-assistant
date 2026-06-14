@@ -9,7 +9,7 @@ export async function apiClient<T = unknown>(path: string, options?: RequestInit
     credentials: "include",
     ...options,
     headers: {
-      ...(options?.body != null ? { "Content-Type": "application/json" } : {}),
+      ...(typeof options?.body === "string" ? { "Content-Type": "application/json" } : {}),
       ...options?.headers,
     },
   });

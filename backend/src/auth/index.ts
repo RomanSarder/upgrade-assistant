@@ -30,6 +30,10 @@ export default fastifyPlugin(async (fastify) => {
         await fastify.db.select().from(users).where(eq(users.email, email))
       )[0]
 
+      if (!user) {
+        throw fastify.httpErrors.internalServerError()
+      }
+
       const magicLinkToken = generateSecureRandomString()
 
       const [magicLink] = await fastify.db.insert(magicLinkTokens).values({
@@ -58,7 +62,7 @@ export default fastifyPlugin(async (fastify) => {
 
       const [magicLink] = await fastify.db.select().from(magicLinkTokens).where(eq(magicLinkTokens.token, token))
 
-      if (!magicLink) {
+      if (!magicLink || magicLink.expiresAt < new Date()) {
         return reply.unauthorized("Invalid credentials")
       }
 
