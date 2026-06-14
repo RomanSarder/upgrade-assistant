@@ -1,5 +1,5 @@
 export type ChangelogResult =
-  | { status: "found"; content: string; source: "github_releases" | "changelog_file"; versions: string[] }
+  | { status: "found"; content: string; source: "github_releases" | "changelog_file"; versions: string[]; slices: ContentSlice[] }
   | { status: "partial"; compareUrl: string; source: "compare_url" }
   | { status: "unknown" };
 
