@@ -1,0 +1,9 @@
+{
+  "name": "upgrade-advisor",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend",
+    "packages/*"
+  ]
+}
