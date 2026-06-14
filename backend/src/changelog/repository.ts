@@ -1,5 +1,6 @@
 import { and, eq, gt, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import semver from "semver";
 import { changelogChunks } from "../db/schema/changelog-chunks";
 import type { ChangelogResult, ContentSlice } from "./types";
 
@@ -23,6 +24,7 @@ export async function findCached(
 
   if (rows.length === 0) return null;
 
+  rows.sort((a, b) => semver.rcompare(a.version, b.version) ?? 0);
   const source = rows[0].source as "github_releases" | "changelog_file";
   const slices: ContentSlice[] = rows.map((r) => ({ version: r.version, content: r.content }));
 

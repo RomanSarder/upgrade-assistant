@@ -1,9 +1,10 @@
 import { useState, useRef } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, ExternalLink, ChevronDown, ChevronRight } from "lucide-react";
 import { apiClient, ApiError } from "../shared/api";
 import { DotBackground, Card } from "../shared/ui";
-import type { PackageResult } from "@upgrade-advisor/shared";
+import type { PackageResult, ChangelogInfo } from "@upgrade-advisor/shared";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -12,6 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import ReactMarkdown from "react-markdown";
 
 type PageState = "idle" | "loading" | "results" | "error";
 
@@ -41,7 +49,114 @@ function MonoCell({ className, children }: { className?: string; children: React
   return <TableCell className={`font-mono text-[13px] ${className ?? ""}`}>{children}</TableCell>;
 }
 
-function ResultsTable({ results }: { results: PackageResult[] }) {
+function ChangelogCell({ changelog, onSelect }: { changelog: ChangelogInfo; onSelect: () => void }) {
+  if (changelog.status === "found") {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onSelect}
+        className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300"
+      >
+        View changelog
+      </Button>
+    );
+  }
+  if (changelog.status === "partial") {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        render={<a href={changelog.compareUrl} target="_blank" rel="noreferrer" />}
+        className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300"
+      >
+        <ExternalLink />
+        View commits
+      </Button>
+    );
+  }
+  return (
+    <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-200">
+      No changelog
+    </Badge>
+  );
+}
+
+function VersionAccordion({ slices }: { slices: Array<{ version: string; content: string }> }) {
+  const [openVersions, setOpenVersions] = useState<Set<string>>(
+    () => new Set(slices.length > 0 ? [slices[0].version] : [])
+  );
+
+  const toggle = (version: string) => {
+    setOpenVersions((prev) => {
+      const next = new Set(prev);
+      if (next.has(version)) next.delete(version);
+      else next.add(version);
+      return next;
+    });
+  };
+
+  return (
+    <div className="divide-y divide-gray-100">
+      {slices.map(({ version, content }) => {
+        const isOpen = openVersions.has(version);
+        return (
+          <div key={version}>
+            <button
+              onClick={() => toggle(version)}
+              aria-expanded={isOpen}
+              className="w-full flex items-center gap-2 px-6 py-3 text-left hover:bg-gray-50 transition-colors"
+            >
+              {isOpen ? (
+                <ChevronDown className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+              )}
+              <span className="font-mono text-xs font-semibold text-gray-700">{version}</span>
+            </button>
+            {isOpen && (
+              <div className="px-6 pb-4 text-sm text-gray-700 [&_h1]:text-base [&_h1]:font-semibold [&_h1]:mb-1 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-medium [&_h3]:mt-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mt-0.5 [&_code]:font-mono [&_code]:text-xs [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:rounded [&_a]:text-indigo-600 [&_a]:underline [&_p]:leading-relaxed [&_p]:break-words [&_li]:break-words [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_pre]:rounded [&_pre]:bg-gray-100 [&_pre]:p-3 [&_pre]:text-xs">
+                <ReactMarkdown>{content}</ReactMarkdown>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ChangelogSheet({ pkg, onClose }: { pkg: PackageResult | null; onClose: () => void }) {
+  const lastPkgRef = useRef<PackageResult | null>(null);
+  if (pkg !== null) lastPkgRef.current = pkg;
+  const displayPkg = lastPkgRef.current;
+
+  return (
+    <Sheet open={pkg !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent side="right" className="w-[480px] sm:max-w-[480px] flex flex-col p-0 gap-0">
+        <SheetHeader className="border-b border-gray-100 px-6 py-4 shrink-0">
+          <SheetTitle className="font-mono text-sm font-semibold">{displayPkg?.name}</SheetTitle>
+          <p className="text-xs text-gray-500 font-mono mt-0.5">
+            {displayPkg?.currentVersion} → {displayPkg?.latestVersion ?? "—"}
+          </p>
+        </SheetHeader>
+        {displayPkg?.changelog.status === "found" && (
+          <div key={displayPkg.name} className="flex-1 overflow-y-auto overflow-x-hidden">
+            <VersionAccordion slices={displayPkg.changelog.slices} />
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function ResultsTable({
+  results,
+  onSelect,
+}: {
+  results: PackageResult[];
+  onSelect: (pkg: PackageResult) => void;
+}) {
   return (
     <Table>
       <TableHeader>
@@ -51,6 +166,7 @@ function ResultsTable({ results }: { results: PackageResult[] }) {
           <TableHead>Latest</TableHead>
           <TableHead>Type</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Changelog</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -64,6 +180,9 @@ function ResultsTable({ results }: { results: PackageResult[] }) {
             <MonoCell className="text-gray-600">{pkg.latestVersion ?? "—"}</MonoCell>
             <TableCell><TypeBadge isDev={pkg.isDev} /></TableCell>
             <TableCell><StatusBadge upgradeAvailable={pkg.upgradeAvailable} /></TableCell>
+            <TableCell>
+              <ChangelogCell changelog={pkg.changelog} onSelect={() => onSelect(pkg)} />
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -77,6 +196,7 @@ export function AnalysisPage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [results, setResults] = useState<PackageResult[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
+  const [selectedPkg, setSelectedPkg] = useState<PackageResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePasteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -127,6 +247,7 @@ export function AnalysisPage() {
     setPasteText("");
     setUploadedFile(null);
     setErrorMessage("");
+    setSelectedPkg(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -145,9 +266,10 @@ export function AnalysisPage() {
             </button>
           </div>
           <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-            <ResultsTable results={results} />
+            <ResultsTable results={results} onSelect={setSelectedPkg} />
           </div>
         </div>
+        <ChangelogSheet pkg={selectedPkg} onClose={() => setSelectedPkg(null)} />
       </div>
     );
   }

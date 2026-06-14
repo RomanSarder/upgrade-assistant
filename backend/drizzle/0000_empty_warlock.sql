@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS vector;
+--> statement-breakpoint
 CREATE TABLE "magic_link_tokens" (
 	"token" text PRIMARY KEY NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL,

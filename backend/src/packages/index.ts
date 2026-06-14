@@ -1,13 +1,7 @@
 import { FastifyPluginAsync } from "fastify";
 import semver from "semver";
-
-interface PackageResult {
-  name: string;
-  currentVersion: string;
-  latestVersion: string | null;
-  isDev: boolean;
-  upgradeAvailable: boolean;
-}
+import type { ChangelogInfo, PackageResult } from "@upgrade-advisor/shared";
+import { fetchChangelogWithCache } from "../changelog/cached-fetch";
 
 const FETCH_TIMEOUT_MS = 5000;
 const CONCURRENCY_LIMIT = 10;
@@ -40,6 +34,16 @@ async function mapConcurrent<T, R>(
   }
   await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
   return results;
+}
+
+function toChangelogInfo(raw: Awaited<ReturnType<typeof fetchChangelogWithCache>>): ChangelogInfo {
+  if (raw.status === "found") {
+    return { status: "found", content: raw.content, source: raw.source, versions: raw.versions, slices: raw.slices };
+  }
+  if (raw.status === "partial") {
+    return { status: "partial", compareUrl: raw.compareUrl };
+  }
+  return { status: "unknown" };
 }
 
 const packages: FastifyPluginAsync = async (fastify) => {
@@ -101,7 +105,15 @@ const packages: FastifyPluginAsync = async (fastify) => {
               ? semver.lt(coerced, latestVersion)
               : false;
 
-          return { name, currentVersion, latestVersion, isDev, upgradeAvailable };
+          let changelog: ChangelogInfo;
+          if (upgradeAvailable && coerced !== null && latestVersion !== null) {
+            const raw = await fetchChangelogWithCache(fastify.db, name, coerced.version, latestVersion);
+            changelog = toChangelogInfo(raw);
+          } else {
+            changelog = { status: "unknown" };
+          }
+
+          return { name, currentVersion, latestVersion, isDev, upgradeAvailable, changelog };
         }
       );
 
