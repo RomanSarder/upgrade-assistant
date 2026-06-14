@@ -14,7 +14,7 @@ declare module "fastify" {
 
 const schema = {
   type: "object",
-  required: ["DATABASE_URL", "REDIS_URL", "NODE_ENV"],
+  required: ["DATABASE_URL", "REDIS_URL", "NODE_ENV", "GITHUB_TOKEN"],
   properties: {
     DATABASE_URL: {
       type: "string",
@@ -29,6 +29,9 @@ const schema = {
     FRONTEND_URL: {
       type: "string",
     },
+    GITHUB_TOKEN: {
+      type: 'string',
+    }
   },
 };
 
