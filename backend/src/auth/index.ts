@@ -1,0 +1,86 @@
+import { magicLinkTokens, sessions, users } from "../db/schema";
+import { generateSecureRandomString, hashSecret } from "./utils";
+import { addToDate } from "../utils";
+import { eq } from "drizzle-orm";
+import authenticatePlugin from "./authenticate-plugin";
+import fastifyPlugin from "fastify-plugin";
+
+export default fastifyPlugin(async (fastify) => {
+  fastify.register(authenticatePlugin)
+
+  fastify.register(fastify => {
+    fastify.post<{ Body: { email: string } }>("/sign-in", {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['email'],
+          properties: {
+            email: { type: 'string', format: 'email' }
+          }
+        }
+      }
+    }, async (request) => {
+      const { email } = request.body
+
+      const [user] = await fastify.db.insert(users).values({
+        email,
+      }).returning().onConflictDoNothing()
+
+      const magicLinkToken = generateSecureRandomString()
+
+      const [magicLink] = await fastify.db.insert(magicLinkTokens).values({
+        token: magicLinkToken,
+        userId: user.id,
+        expiresAt: addToDate(new Date(), { minutes: 15 })
+      }).returning()
+
+      fastify.log.debug({ token: magicLink.token }, "Magic Link Token")
+    })
+
+    fastify.post<{ Querystring: { token: string } }>("/token/verify", {
+      schema: {
+        querystring: {
+          type: 'object',
+          required: ['token'],
+          properties: {
+            token: {
+              type: 'string'
+            }
+          }
+        }
+      }
+    }, async (request, reply) => {
+      const { token } = request.query
+
+      const [magicLink] = await fastify.db.select().from(magicLinkTokens).where(eq(magicLinkTokens.token, token))
+
+      if (!magicLink) {
+        return reply.unauthorized("Invalid credentials")
+      }
+
+      const id = generateSecureRandomString();
+    	const secret = generateSecureRandomString();
+    	const secretHash = await hashSecret(secret);
+
+      const cookieToken = id + "." + secret;
+
+      await fastify.db.insert(sessions).values({
+        id,
+        userId: magicLink.userId,
+        secretHash: Buffer.from(secretHash).toString('hex'),
+        expiresAt: addToDate(new Date(), { days: 7 }),
+      })
+
+      await fastify.db.delete(magicLinkTokens).where(eq(magicLinkTokens.token, token))
+
+      const isProd = process.env.NODE_ENV === "production";
+      reply.setCookie('upgrade_advisor_token', cookieToken, {
+        path: "/",
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      });
+    })
+  }, { prefix: '/auth' })
+})
