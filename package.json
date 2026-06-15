@@ -4,6 +4,7 @@
   "workspaces": [
     "backend",
     "frontend",
-    "packages/*"
+    "packages/*",
+    "worker"
   ]
 }

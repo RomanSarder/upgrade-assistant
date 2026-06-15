@@ -147,6 +147,18 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
                   "deprecated package), medium (behaviour changes requiring testing), " +
                   "low (no breaking changes), unknown (insufficient changelog data).",
               },
+              reasoning: {
+                type: "string",
+                description:
+                  "A concise explanation of why this risk level was chosen, " +
+                  "referencing specific evidence found in the changelog or npm metadata.",
+              },
+              recommendation: {
+                type: "string",
+                description:
+                  "Actionable upgrade advice for this package: what the developer " +
+                  "should do before upgrading, what to test, or whether to skip the upgrade.",
+              },
             },
             required: [
               "package",
@@ -156,6 +168,8 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
               "breaking_changes",
               "changelog_sections_used",
               "risk_level",
+              "reasoning",
+              "recommendation",
             ],
           },
         },
