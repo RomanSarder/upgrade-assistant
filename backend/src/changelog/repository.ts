@@ -48,7 +48,11 @@ export async function findCached(
     })
     .map(([version, group]) => {
       group.sort((a, b) => a.startOffset - b.startOffset);
-      let content = group[0].content;
+      // Strip "(part N of M)" label injected into multi-part chunk headers before reconstruction.
+      // currentEnd still uses the original chunk length so the offset-based strip of subsequent
+      // chunk headers remains correct.
+      const firstContent = group[0].content.replace(/ \(part \d+ of \d+\)/, "");
+      let content = firstContent;
       let currentEnd = group[0].startOffset + group[0].content.length;
       for (const chunk of group.slice(1)) {
         const stripLen = currentEnd - chunk.startOffset;

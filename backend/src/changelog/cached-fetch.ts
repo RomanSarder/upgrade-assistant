@@ -3,6 +3,7 @@ import type { ChangelogResult } from "./types";
 import { fetchChangelog } from "./fetch";
 import { findCached, insertChunks } from "./repository";
 import { chunkAndEmbed } from "./embeddings";
+import { cleanChangelog } from "./clean-changelog";
 
 export async function fetchChangelogWithCache(
   db: PostgresJsDatabase<any>,
@@ -16,8 +17,10 @@ export async function fetchChangelogWithCache(
   const result = await fetchChangelog(packageName, fromVersion, toVersion);
 
   if (result.status === "found") {
-    const chunks = await chunkAndEmbed(result.slices);
+    const cleanedSlices = result.slices.map(s => ({ ...s, content: cleanChangelog(s.content) }));
+    const chunks = await chunkAndEmbed(cleanedSlices);
     await insertChunks(db, packageName, fromVersion, toVersion, chunks, result.source);
+    return { ...result, slices: cleanedSlices, content: cleanedSlices.map(s => s.content).join("\n\n") };
   }
 
   return result;
