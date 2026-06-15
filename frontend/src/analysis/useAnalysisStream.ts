@@ -1,11 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import type { AnalysisRow, LogEntryKind, RiskLevel, StreamLogEntry } from "./types";
 
+export interface CurrentActivity {
+  currentPackage: string | null;
+  currentToolName: string | null;
+}
+
 interface UseAnalysisStreamResult {
   logEntries: StreamLogEntry[];
   analysisRows: AnalysisRow[];
   summaryCounts: Record<string, number>;
   finalCost: { tokens_used: number; cost_usd: number } | null;
+  currentActivity: CurrentActivity;
 }
 
 export function useAnalysisStream(
@@ -18,6 +24,8 @@ export function useAnalysisStream(
   const [analysisRows, setAnalysisRows] = useState<AnalysisRow[]>([]);
   const [summaryCounts, setSummaryCounts] = useState<Record<string, number>>({});
   const [finalCost, setFinalCost] = useState<{ tokens_used: number; cost_usd: number } | null>(null);
+  const [currentPackage, setCurrentPackage] = useState<string | null>(null);
+  const [currentToolName, setCurrentToolName] = useState<string | null>(null);
 
   const logCounterRef = useRef(0);
   const packageMetaRef = useRef<Record<string, { from_version: string; to_version: string }>>({});
@@ -33,6 +41,8 @@ export function useAnalysisStream(
     setAnalysisRows([]);
     setSummaryCounts({});
     setFinalCost(null);
+    setCurrentPackage(null);
+    setCurrentToolName(null);
     logCounterRef.current = 0;
     packageMetaRef.current = {};
 
@@ -48,10 +58,13 @@ export function useAnalysisStream(
           const p = event.payload as { package: string; from_version: string; to_version: string };
           packageMetaRef.current[p.package] = { from_version: p.from_version, to_version: p.to_version };
           addLog(`${p.package}  ${p.from_version} → ${p.to_version}`, "package_start");
+          setCurrentPackage(p.package);
+          setCurrentToolName(null);
           break;
         }
         case "tool_call": {
           const p = event.payload as { tool_name: string; input: unknown; result: unknown };
+          setCurrentToolName(p.tool_name);
           if (p.tool_name === "fetch_changelog") {
             const r = p.result as { status?: string; source?: string; versions?: string[] };
             if (r.status === "found") {
@@ -120,6 +133,8 @@ export function useAnalysisStream(
           };
           setAnalysisRows((prev) => [...prev, row]);
           setSummaryCounts((prev) => ({ ...prev, [p.risk_level]: (prev[p.risk_level] ?? 0) + 1 }));
+          setCurrentPackage(null);
+          setCurrentToolName(null);
           break;
         }
         case "done": {
@@ -151,5 +166,5 @@ export function useAnalysisStream(
     return () => { source.close(); };
   }, [jobId, active]);
 
-  return { logEntries, analysisRows, summaryCounts, finalCost };
+  return { logEntries, analysisRows, summaryCounts, finalCost, currentActivity: { currentPackage, currentToolName } };
 }

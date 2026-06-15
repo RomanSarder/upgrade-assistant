@@ -18,6 +18,8 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import type { AnalysisRow, RiskLevel, StreamLogEntry } from "./types";
+import type { CurrentActivity } from "./useAnalysisStream";
+import { ActivityStatus } from "./ActivityStatus";
 
 const RISK_CONFIG: Record<
   RiskLevel,
@@ -142,6 +144,7 @@ function LogEntry({ entry }: { entry: StreamLogEntry }) {
     default:                  return <div className="pl-5 py-0.5 text-gray-500 text-sm">{text}</div>;
   }
 }
+
 
 function StreamLog({ entries, isStreaming }: { entries: StreamLogEntry[]; isStreaming: boolean }) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -316,10 +319,11 @@ interface Props {
   analysisRows: AnalysisRow[];
   summaryCounts: Record<string, number>;
   finalCost: { tokens_used: number; cost_usd: number } | null;
+  currentActivity: CurrentActivity;
   onReset: () => void;
 }
 
-export function AnalysisStream({ isStreaming, logEntries, analysisRows, summaryCounts, finalCost, onReset }: Props) {
+export function AnalysisStream({ isStreaming, logEntries, analysisRows, summaryCounts, finalCost, currentActivity, onReset }: Props) {
   return (
     <div className="min-h-screen">
       <div className="max-w-5xl mx-auto px-8 py-8 space-y-6">
@@ -340,6 +344,7 @@ export function AnalysisStream({ isStreaming, logEntries, analysisRows, summaryC
           )}
         </div>
 
+        {isStreaming && <ActivityStatus currentActivity={currentActivity} completedCount={analysisRows.length} />}
         <StreamLog entries={logEntries} isStreaming={isStreaming} />
 
         {analysisRows.length > 0 && (

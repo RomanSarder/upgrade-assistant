@@ -4,8 +4,11 @@ import { DotBackground } from "../shared/ui";
 import { AnalysisForm } from "./AnalysisForm";
 import { AnalysisStream } from "./AnalysisStream";
 import { useAnalysisStream } from "./useAnalysisStream";
+import type { CurrentActivity } from "./useAnalysisStream";
 import { DEMO_LOG_ENTRIES, DEMO_ROWS, DEMO_SUMMARY, DEMO_COST } from "./demoData";
 import type { PageState } from "./types";
+
+const DEMO_ACTIVITY: CurrentActivity = { currentPackage: null, currentToolName: null };
 
 function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
@@ -30,7 +33,7 @@ export function AnalysisPage() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const { logEntries, analysisRows, summaryCounts, finalCost } = useAnalysisStream(
+  const { logEntries, analysisRows, summaryCounts, finalCost, currentActivity } = useAnalysisStream(
     jobId,
     pageState === "streaming",
     () => setPageState("done"),
@@ -73,6 +76,7 @@ export function AnalysisPage() {
           analysisRows={isDemo ? DEMO_ROWS : analysisRows}
           summaryCounts={isDemo ? DEMO_SUMMARY : summaryCounts}
           finalCost={isDemo ? DEMO_COST : finalCost}
+          currentActivity={isDemo ? DEMO_ACTIVITY : currentActivity}
           onReset={reset}
         />
       </>
