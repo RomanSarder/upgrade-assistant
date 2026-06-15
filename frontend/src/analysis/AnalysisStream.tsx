@@ -63,7 +63,7 @@ function PackageStartEntry({ text }: { text: string }) {
   return (
     <div className="pt-5 first:pt-0 pb-1">
       <div className="flex items-center gap-2.5 mb-2">
-        <span className="text-indigo-400 text-base leading-none select-none">◆</span>
+        <span aria-hidden="true" className="text-indigo-400 text-base leading-none select-none">◆</span>
         <span className="text-white font-semibold text-sm tracking-tight">{text}</span>
       </div>
       <div className="h-px bg-gray-800" />
@@ -74,7 +74,7 @@ function PackageStartEntry({ text }: { text: string }) {
 function ChangelogFoundEntry({ text }: { text: string }) {
   return (
     <div className="flex items-center gap-2 pl-5 py-0.5 text-emerald-400 text-sm">
-      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+      <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
       <span>{text}</span>
     </div>
   );
@@ -84,7 +84,7 @@ function ChangelogMissingEntry({ text }: { text: string }) {
   return (
     <div className="pl-5 py-0.5">
       <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-950/60 border border-amber-700/40 px-2.5 py-1 text-sm text-amber-300 font-medium">
-        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+        <AlertTriangle aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
         {text}
       </span>
     </div>
@@ -93,8 +93,8 @@ function ChangelogMissingEntry({ text }: { text: string }) {
 
 function NpmMetadataEntry({ text }: { text: string }) {
   return (
-    <div className="pl-5 py-0.5 text-sky-400/80 text-sm">
-      <span className="mr-1.5 opacity-60">↗</span>
+    <div className="pl-5 py-0.5 text-sky-300 text-sm">
+      <span aria-hidden="true" className="mr-1.5 opacity-60">↗</span>
       {text}
     </div>
   );
@@ -102,8 +102,8 @@ function NpmMetadataEntry({ text }: { text: string }) {
 
 function QueryEntry({ text }: { text: string }) {
   return (
-    <div className="pl-7 py-0.5 text-gray-500 text-sm">
-      <span className="mr-1.5 text-gray-600">→</span>
+    <div className="pl-7 py-0.5 text-gray-400 text-sm">
+      <span aria-hidden="true" className="mr-1.5 text-gray-600">→</span>
       <span className="italic">{text}</span>
     </div>
   );
@@ -115,7 +115,7 @@ function RiskEntry({ text, riskLevel }: { text: string; riskLevel?: RiskLevel })
   return (
     <div className={`pl-5 py-1.5 flex items-start gap-3 ${isHighSeverity ? "bg-gray-900/60 rounded-md mt-0.5 pr-3" : ""}`}>
       <span className={`shrink-0 mt-0.5 text-xs font-bold uppercase tracking-wider ${cfg.terminal}`}>
-        ■ {cfg.label}
+        <span aria-hidden="true">■ </span>{cfg.label}
       </span>
       <span className="text-gray-400 text-xs leading-relaxed font-sans">{text}</span>
     </div>
@@ -125,7 +125,7 @@ function RiskEntry({ text, riskLevel }: { text: string; riskLevel?: RiskLevel })
 function ToolErrorEntry({ text }: { text: string }) {
   return (
     <div className="pl-5 py-0.5 flex items-center gap-2 text-red-400 text-sm">
-      <XCircle className="h-3.5 w-3.5 shrink-0" />
+      <XCircle aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
       <span>{text}</span>
     </div>
   );
@@ -156,20 +156,20 @@ function StreamLog({ entries, isStreaming }: { entries: StreamLogEntry[]; isStre
   return (
     <div className="bg-gray-950 rounded-xl overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-800/80">
-        <div className="flex items-center gap-1.5">
+        <div aria-hidden="true" className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-gray-700" />
           <span className="h-2.5 w-2.5 rounded-full bg-gray-700" />
           <span className="h-2.5 w-2.5 rounded-full bg-gray-700" />
         </div>
-        <span className="ml-2 text-xs text-gray-500 font-mono">upgrade-advisor · agent</span>
+        <span className="ml-2 text-xs text-gray-400 font-mono">upgrade-advisor · agent</span>
         {isStreaming && (
-          <div className="ml-auto flex items-center gap-1.5 text-xs text-gray-500">
-            <Loader2 className="h-3 w-3 animate-spin" />
+          <div className="ml-auto flex items-center gap-1.5 text-xs text-gray-400" aria-live="polite">
+            <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />
             <span>running</span>
           </div>
         )}
       </div>
-      <div className="h-[50vh] overflow-y-auto p-4 font-mono space-y-0.5 scroll-smooth">
+      <div role="log" aria-label="Analysis log" aria-live="polite" tabIndex={0} className="h-[50vh] overflow-y-auto p-4 font-mono space-y-0.5 scroll-smooth">
         {entries.length === 0 && isStreaming && (
           <div className="flex items-center gap-2 text-gray-500 text-sm">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -194,7 +194,7 @@ function SummaryCard({ level, count }: { level: RiskLevel; count: number }) {
   const cfg = RISK_CONFIG[level];
   return (
     <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 flex items-center gap-3 shadow-sm">
-      <span className={`h-2 w-2 rounded-full shrink-0 ${cfg.dot}`} />
+      <span aria-hidden="true" className={`h-2 w-2 rounded-full shrink-0 ${cfg.dot}`} />
       <div>
         <p className="text-2xl font-bold text-gray-900 leading-none">{count}</p>
         <p className="text-xs text-gray-500 mt-0.5">{cfg.label}</p>
@@ -264,10 +264,10 @@ function AnalysisResultsTable({
     <Table>
       <TableHeader>
         <TableRow className="border-gray-100">
-          <TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-400">Package</TableHead>
-          <TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-400">Version Range</TableHead>
-          <TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-400">Risk</TableHead>
-          <TableHead className="w-10" />
+          <TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-500">Package</TableHead>
+          <TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-500">Version Range</TableHead>
+          <TableHead className="text-xs font-semibold uppercase tracking-wide text-gray-500">Risk</TableHead>
+          <TableHead className="w-10"><span className="sr-only">Actions</span></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -278,7 +278,7 @@ function AnalysisResultsTable({
               <TableCell className="font-mono font-semibold text-sm text-gray-900">{row.package}</TableCell>
               <TableCell className="font-mono text-sm text-gray-500">
                 {row.from_version}
-                <span className="mx-1.5 text-gray-300">→</span>
+                <span aria-hidden="true" className="mx-1.5 text-gray-300">→</span>
                 {row.to_version}
               </TableCell>
               <TableCell><RiskBadge level={row.risk_level} /></TableCell>
@@ -286,9 +286,10 @@ function AnalysisResultsTable({
                 {row.breaking_changes && (
                   <button
                     onClick={() => onViewDetails(row)}
+                    aria-label={`View details for ${row.package}`}
                     className="inline-flex items-center gap-0.5 rounded-md px-2 py-1 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
                   >
-                    Details <ChevronRight className="h-3 w-3" />
+                    Details <ChevronRight aria-hidden="true" className="h-3 w-3" />
                   </button>
                 )}
               </TableCell>
@@ -329,7 +330,7 @@ export function AnalysisStream({ isStreaming, logEntries, analysisRows, summaryC
       <div className="max-w-5xl mx-auto px-8 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-mono uppercase tracking-widest text-gray-400 mb-1">upgrade-advisor</p>
+            <p className="text-xs font-mono uppercase tracking-widest text-gray-500 mb-1">upgrade-advisor</p>
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
               {isStreaming ? "Analysing packages…" : "Analysis complete"}
             </h1>
@@ -352,7 +353,7 @@ export function AnalysisStream({ isStreaming, logEntries, analysisRows, summaryC
         )}
 
         {!isStreaming && finalCost && (
-          <p className="text-center text-xs text-gray-400 font-mono">
+          <p className="text-center text-xs text-gray-500 font-mono">
             {finalCost.tokens_used.toLocaleString()} tokens · ${finalCost.cost_usd.toFixed(4)}
           </p>
         )}

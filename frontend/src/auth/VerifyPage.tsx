@@ -43,7 +43,7 @@ export function VerifyPage() {
       <div className="w-[360px]">
         <Card>
           <div className="px-8 pt-7 pb-0">
-            <span className="font-mono text-[11px] tracking-[0.18em] text-gray-400 uppercase select-none">
+            <span className="font-mono text-xs tracking-[0.18em] text-gray-400 uppercase select-none">
               upgrade-advisor
             </span>
           </div>
@@ -55,10 +55,10 @@ export function VerifyPage() {
                   <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
                 </div>
                 <div>
-                  <p className="text-[15px] font-semibold text-gray-900 tracking-[-0.01em]">
+                  <p className="text-base font-semibold text-gray-900 tracking-[-0.01em]">
                     Signing you in…
                   </p>
-                  <p className="mt-0.5 text-[12px] text-gray-400">Verifying your link.</p>
+                  <p className="mt-0.5 text-xs text-gray-400">Verifying your link.</p>
                 </div>
               </div>
             )}
@@ -69,10 +69,10 @@ export function VerifyPage() {
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-[15px] font-semibold text-gray-900 tracking-[-0.01em]">
+                  <p className="text-base font-semibold text-gray-900 tracking-[-0.01em]">
                     You're signed in
                   </p>
-                  <p className="mt-0.5 text-[12px] text-gray-400">Redirecting you now…</p>
+                  <p className="mt-0.5 text-xs text-gray-400">Redirecting you now…</p>
                 </div>
               </div>
             )}
@@ -84,10 +84,10 @@ export function VerifyPage() {
                     <XCircle className="h-5 w-5 text-red-500" />
                   </div>
                   <div>
-                    <p className="text-[15px] font-semibold text-gray-900 tracking-[-0.01em]">
+                    <p className="text-base font-semibold text-gray-900 tracking-[-0.01em]">
                       Link not valid
                     </p>
-                    <p className="mt-0.5 text-[13px] text-gray-500 leading-relaxed max-w-[240px]">
+                    <p className="mt-0.5 text-sm text-gray-500 leading-relaxed max-w-[240px]">
                       {errorMessage}
                     </p>
                   </div>
@@ -95,7 +95,7 @@ export function VerifyPage() {
 
                 <button
                   onClick={() => navigate({ to: "/sign-in" })}
-                  className="w-full flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-[13px] font-medium text-white transition-all duration-150 hover:bg-indigo-700 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                  className="w-full flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-indigo-700 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   Request a new link
                 </button>

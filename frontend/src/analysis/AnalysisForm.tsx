@@ -39,33 +39,37 @@ export function AnalysisForm({ onSubmit }: Props) {
         <div className="animate-fade-up">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-0.5">
-              <h1 className="text-[18px] font-semibold text-gray-900 tracking-[-0.02em]">
+              <h1 className="text-lg font-semibold text-gray-900 tracking-[-0.02em]">
                 Analyse packages
               </h1>
             </div>
+            <label htmlFor="pkg-input" className="sr-only">Package JSON contents</label>
             <textarea
+              id="pkg-input"
               rows={12}
               value={pasteText}
               onChange={handlePasteChange}
               placeholder="Paste package.json contents here…"
-              className="w-full rounded-lg border border-gray-300 bg-gray-50/60 px-3.5 py-3 text-[13px] font-mono text-gray-900 placeholder-gray-400 outline-none resize-none transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10"
+              className="w-full rounded-lg border border-gray-300 bg-gray-50/60 px-3.5 py-3 text-sm font-mono text-gray-900 placeholder-gray-400 outline-none resize-none transition-all duration-150 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/10"
             />
-            <div className="relative flex items-center gap-3">
+            <div className="relative flex items-center gap-3" aria-hidden="true">
               <div className="h-px flex-1 bg-gray-200" />
-              <span className="text-[11px] text-gray-400 uppercase tracking-wide">or</span>
+              <span className="text-xs text-gray-500 uppercase tracking-wide">or</span>
               <div className="h-px flex-1 bg-gray-200" />
             </div>
+            <label htmlFor="pkg-file" className="sr-only">Upload package.json file</label>
             <input
               ref={fileInputRef}
+              id="pkg-file"
               type="file"
               accept=".json,application/json"
               onChange={handleFileChange}
-              className="block w-full text-[13px] text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-[12px] file:font-medium file:text-gray-700 hover:file:bg-gray-200 transition-all duration-150"
+              className="block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-gray-700 hover:file:bg-gray-200 transition-all duration-150"
             />
             <button
               type="submit"
               disabled={!pasteText.trim() && !uploadedFile}
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-[13px] font-medium text-white transition-all duration-150 hover:bg-indigo-700 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-indigo-700 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Analyse
             </button>

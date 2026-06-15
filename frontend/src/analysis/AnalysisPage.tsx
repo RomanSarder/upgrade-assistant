@@ -68,7 +68,7 @@ export function AnalysisPage() {
 
   if (isDemo || pageState === "streaming" || pageState === "done") {
     return (
-      <>
+      <main id="main-content">
         <DotBackground />
         <AnalysisStream
           isStreaming={isDemo ? false : pageState === "streaming"}
@@ -79,12 +79,12 @@ export function AnalysisPage() {
           currentActivity={isDemo ? DEMO_ACTIVITY : currentActivity}
           onReset={reset}
         />
-      </>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <main id="main-content" className="min-h-screen flex items-center justify-center p-4">
       <DotBackground />
       <div className="w-full max-w-2xl">
         {pageState === "error" && (
@@ -92,6 +92,6 @@ export function AnalysisPage() {
         )}
         <AnalysisForm onSubmit={handleSubmit} />
       </div>
-    </div>
+    </main>
   );
 }

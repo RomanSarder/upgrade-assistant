@@ -21,11 +21,11 @@ export function ActivityStatus({ currentActivity, completedCount }: Props) {
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
         <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-indigo-500" />
       </span>
-      <span className="text-sm text-gray-200 min-w-0 truncate">
+      <span className="text-sm text-gray-200 min-w-0 truncate" aria-live="polite" aria-atomic="true">
         {stepLabel}
         {currentPackage && (
           <>
-            <span className="mx-2 text-gray-600">·</span>
+            <span className="mx-2 text-gray-600" aria-hidden="true">·</span>
             <span className="text-indigo-300">{currentPackage}</span>
           </>
         )}
