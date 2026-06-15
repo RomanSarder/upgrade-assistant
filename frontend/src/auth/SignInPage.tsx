@@ -1,21 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { MailCheck, Loader2, ArrowRight, RefreshCw } from "lucide-react";
 import { apiClient, ApiError } from "../shared/api";
-import { DotBackground, Card } from "../shared/ui";
+import { DotBackground, Card, Wordmark } from "../shared/ui";
 
 type FlowState = "idle" | "loading" | "sent" | "error";
 
 const COOLDOWN_SECONDS = 60;
-
-function Wordmark() {
-  return (
-    <div className="px-8 pt-7 pb-0">
-      <span className="font-mono text-[11px] tracking-[0.18em] text-gray-400 uppercase select-none">
-        upgrade-advisor
-      </span>
-    </div>
-  );
-}
 
 function AnimatedSection({ id, children }: { id: string; children: React.ReactNode }) {
   return (

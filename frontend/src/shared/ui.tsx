@@ -1,3 +1,13 @@
+export function Wordmark() {
+  return (
+    <div className="px-8 pt-7 pb-0">
+      <span className="font-mono text-[11px] tracking-[0.18em] text-gray-400 uppercase select-none">
+        upgrade-advisor
+      </span>
+    </div>
+  );
+}
+
 export function DotBackground() {
   return (
     <div

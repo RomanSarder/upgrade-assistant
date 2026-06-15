@@ -1,6 +1,9 @@
-import { Worker } from "bullmq";
+import { Worker, Queue } from "bullmq";
 import Redis from "ioredis";
 import semver from "semver";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "@backend/db/schema";
 import { env } from "../env";
 import { rootLogger } from "../logger";
 
@@ -20,6 +23,10 @@ const redisPort = parseInt(portStr) || 6379;
 
 const FETCH_TIMEOUT_MS = 5000;
 const CONCURRENCY_LIMIT = 10;
+
+const analysisQueue = new Queue("analysis", {
+  connection: { host, port: redisPort, ...(password && { password: decodeURIComponent(password) }), maxRetriesPerRequest: null },
+});
 
 async function fetchLatestVersion(name: string): Promise<string | null> {
   try {
@@ -55,6 +62,7 @@ export const packagesWorker = new Worker<PackagesJobData>(
   "packages",
   async (job) => {
     const { jobId, entries } = job.data;
+    const repoId = jobId;
     const log = rootLogger.child({ jobId, bullJobId: job.id });
     log.info({ entryCount: entries.length }, "packages job received");
 
@@ -62,6 +70,9 @@ export const packagesWorker = new Worker<PackagesJobData>(
     const emit = (event: object): Promise<void> => {
       return publisher.publish(`job:${jobId}`, JSON.stringify(event)).then(() => {}).catch(() => {});
     };
+
+    const pgClient = postgres(env.DATABASE_URL);
+    const db = drizzle(pgClient, { schema });
 
     try {
       await emit({ type: "started", payload: { total: entries.length } });
@@ -73,6 +84,17 @@ export const packagesWorker = new Worker<PackagesJobData>(
           coerced !== null && latestVersion !== null
             ? semver.lt(coerced, latestVersion)
             : false;
+
+        if (latestVersion !== null) {
+          await db.insert(schema.packages).values({
+            repoId,
+            packageName: entry.name,
+            fromVersion: entry.version,
+            toVersion: latestVersion,
+            hasUpgradeAvailable: upgradeAvailable,
+            isDev: entry.isDev,
+          }).onConflictDoNothing();
+        }
 
         await emit({
           type: "package_result",
@@ -86,9 +108,15 @@ export const packagesWorker = new Worker<PackagesJobData>(
         });
       });
 
-      await emit({ type: "done" });
+      const queued = await analysisQueue.add("analyse", { jobId, repoId }, { jobId: `analysis-${jobId}` });
+      if (queued) {
+        log.info("analysis job enqueued");
+      } else {
+        log.warn("analysis job already exists for this jobId, skipping enqueue");
+      }
     } finally {
       await publisher.quit().catch(() => {});
+      await pgClient.end().catch(() => {});
     }
 
     log.info("packages job completed");

@@ -7,8 +7,17 @@ rootLogger.info({ nodeVersion: process.version, env: process.env.NODE_ENV ?? "de
 
 async function shutdown() {
   rootLogger.info("shutting down");
-  await Promise.all([analysisWorker.close(), packagesWorker.close()]);
-  rootLogger.info("shutdown complete");
+  const timer = setTimeout(() => {
+    rootLogger.warn("shutdown timed out, forcing exit");
+    process.exit(1);
+  }, 5000).unref();
+  try {
+    await Promise.all([analysisWorker.close(), packagesWorker.close()]);
+    rootLogger.info("shutdown complete");
+  } finally {
+    clearTimeout(timer);
+  }
+  process.exit(0);
 }
 
 process.on("SIGTERM", () => void shutdown());

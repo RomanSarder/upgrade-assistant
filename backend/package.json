@@ -6,13 +6,13 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "start": "npm run build:ts && fastify start --pretty-print -l info dist/backend/src/app.js",
+    "start": "npm run build:ts && fastify start --pretty-print -l info dist/app.js",
     "start:prod": "node dist/backend/src/server.js",
     "build:ts": "tsc",
     "watch:ts": "tsc -w",
     "predev": "pkill -f 'fastify start' 2>/dev/null; lsof -ti:${PORT:-3000} | xargs kill -9 2>/dev/null; sleep 0.5; true",
     "dev": "npm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\" \"npm:watch:ts\" \"npm:dev:start\"",
-    "dev:start": "fastify start --ignore-watch=.ts$ -w -l info -P dist/backend/src/app.js",
+    "dev:start": "fastify start --ignore-watch=.ts$ -w -l info -P dist/app.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:studio": "drizzle-kit studio"

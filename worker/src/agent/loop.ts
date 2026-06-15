@@ -175,6 +175,7 @@ export async function runAgentLoop(jobId: string, repoId: string, log: Logger): 
 
     for (const pkg of pkgs) {
       let riskLevel = "unknown";
+      let breakingChanges: string | null = null;
       const pkgLog = log.child({ packageName: pkg.packageName, fromVersion: pkg.fromVersion, toVersion: pkg.toVersion });
       const pkgStart = Date.now();
 
@@ -192,11 +193,23 @@ export async function runAgentLoop(jobId: string, repoId: string, log: Logger): 
         const systemPrompt =
           `You are an upgrade-risk analyst. For the package "${pkg.packageName}" ` +
           `(upgrading from ${pkg.fromVersion} to ${pkg.toVersion}), use the available ` +
-          `tools to assess upgrade risk. Call fetch_changelog first, then use ` +
-          `query_changelog to investigate breaking changes, migration requirements, ` +
-          `deprecated APIs, and peer-dependency changes. Call check_npm_metadata to ` +
-          `check package health. When your investigation is complete, call ` +
-          `synthesise_risk with your findings, reasoning, and actionable recommendation.`;
+          `tools to assess upgrade risk. This is a ${pkg.isDev ? 'devDependency — lower runtime impact' : 'runtime dependency — affects production behaviour'}.
+
+          Use tools in this order:
+          1. fetch_changelog — retrieve changelog content for this version range
+          2. query_changelog — investigate breaking changes, removed APIs, migration requirements, deprecated APIs, peer-dependency changes, and Node.js version requirements
+          3. check_npm_metadata — check package health and maintenance status
+          4. synthesise_risk — call this when investigation is complete with your findings and recommendation
+
+          Risk level definitions — apply these strictly:
+          - safe: no API changes; patch or security fix only; drop-in replacement
+          - low: additive changes only; new optional APIs; no removed or renamed APIs
+          - medium: deprecated APIs warned but not removed; behaviour changes with clear workarounds available
+          - high: APIs removed or renamed; signature changes; migration steps required but documented
+          - breaking: complete API overhaul; ESM-only conversion; no backwards compatibility
+
+          Be precise. If no breaking changes are found, say safe or low — do not inflate risk. ` +
+          `If changelog content is unavailable, say so explicitly and note that your assessment is based on incomplete information.`;
 
         const messages: Anthropic.MessageParam[] = [
           {
@@ -249,6 +262,9 @@ export async function runAgentLoop(jobId: string, repoId: string, log: Logger): 
                 if (block.name === "synthesise_risk") {
                   const r = result as { risk_levels?: Record<string, string> };
                   riskLevel = r.risk_levels?.[pkg.packageName] ?? riskLevel;
+                  const findings = (block.input as { findings: SynthesiseFinding[] }).findings;
+                  const finding = findings.find((f) => f.package === pkg.packageName) ?? findings[0];
+                  breakingChanges = finding?.breaking_changes ?? null;
                 }
               } catch (err) {
                 isError = true;
@@ -286,7 +302,7 @@ export async function runAgentLoop(jobId: string, repoId: string, log: Logger): 
       }
 
       pkgLog.info({ durationMs: Date.now() - pkgStart, riskLevel }, "package analysis completed");
-      emit({ type: "package_done", payload: { package: pkg.packageName, risk_level: riskLevel } });
+      emit({ type: "package_done", payload: { package: pkg.packageName, risk_level: riskLevel, breaking_changes: breakingChanges } });
     }
 
     const totalTokens = totalInputTokens + totalOutputTokens;

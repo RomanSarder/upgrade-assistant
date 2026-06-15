@@ -1,0 +1,1 @@
+ALTER TABLE "analysis_runs" ALTER COLUMN "tokens_used" SET DATA TYPE bigint;
