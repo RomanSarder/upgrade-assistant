@@ -30,6 +30,11 @@ function splitProse(text: string, baseOffset = 0): Chunk[] {
   for (let start = 0; start < text.length; start += step) {
     result.push({ text: text.slice(start, start + LEVEL3_CHUNK_SIZE), startOffset: baseOffset + start });
   }
+  // Drop a tiny trailing sliver that is already fully covered by the previous chunk's overlap
+  // tail (any remainder shorter than LEVEL3_OVERLAP chars is redundant).
+  if (result.length > 1 && result[result.length - 1].text.length < LEVEL3_OVERLAP) {
+    result.pop();
+  }
   return result;
 }
 
@@ -79,7 +84,7 @@ function splitOnListBoundaries(header: string, body: string, bodyOffset: number)
 
   const m = subChunks.length;
   return subChunks.map(({ lines, offset }, i) => ({
-    text: `${header} (part ${i + 1} of ${m})\n${lines}`,
+    text: `${header ? `${header} ` : ""}(part ${i + 1} of ${m})\n${lines}`,
     startOffset: offset,
   }));
 }
@@ -115,17 +120,20 @@ export async function splitIntoChunks(text: string): Promise<Chunk[]> {
     sections.push({ header: currentHeader, body: currentBody, startOffset: currentOffset });
   }
 
-  // No ## / ### headers found — fall straight to Level 3 prose splitting
+  // No ## headers found. ### headers are intentionally excluded from structural splitting (see
+  // SECTION_HEADER_RE comment). Changelogs that use ### as their sole top-level version marker
+  // with no parent ## header are an accepted edge case: they are prose-chunked here rather than
+  // semantically split. Modern npm packages following Keep a Changelog use ## for release headers.
   if (sections.length === 0 || (sections.length === 1 && sections[0].header === "")) {
     return splitProse(text, 0);
   }
 
   const result: Chunk[] = [];
   for (const { header, body, startOffset } of sections) {
-    // Strip the one trailing \n always appended by the line-accumulation loop (phantom for the
-    // last section; for middle sections it removes the inter-section blank line, which is fine
-    // for embedding purposes and keeps size checks accurate).
-    const trimmedBody = body.replace(/\n$/, "");
+    // Strip all trailing newlines: middle sections accumulate a blank separator line ("\n\n"),
+    // and the final section ends with a phantom "\n" from the line-accumulation loop.
+    // Stripping all trailing newlines keeps full.length accurate for the Level 2/3 size check.
+    const trimmedBody = body.replace(/\n+$/, "");
     const full = header ? `${header}\n${trimmedBody}` : trimmedBody;
     if (full.length <= LEVEL2_MAX_CHARS) {
       result.push({ text: full, startOffset });

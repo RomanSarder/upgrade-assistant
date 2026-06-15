@@ -4,8 +4,8 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { and, asc, eq, gt, sql } from "drizzle-orm";
 import { cosineDistance } from "drizzle-orm/sql/functions";
 import { changelogChunks } from "../src/db/schema/changelog-chunks";
-import { embed } from "../src/changelog/embeddings";
-import { chunkAndEmbed } from "../src/changelog/embeddings";
+import { embed, chunkAndEmbed } from "../src/changelog/embeddings";
+import { cleanChangelog } from "../src/changelog/clean-changelog";
 import { findCached, insertChunks } from "../src/changelog/repository";
 import { fetchChangelog } from "../src/changelog/fetch";
 
@@ -147,9 +147,10 @@ async function main() {
 
       if (result.status === "found") {
         console.log(`  embedding ${result.slices.length} version slices (may retry on 429)...`);
+        const cleanedSlices = result.slices.map(s => ({ ...s, content: cleanChangelog(s.content) }));
         const chunks = await withRetry(
           `${tc.package} ingest embed`,
-          () => chunkAndEmbed(result.slices),
+          () => chunkAndEmbed(cleanedSlices),
         );
         await insertChunks(db, tc.package, tc.from, tc.to, chunks, result.source);
         console.log(`  stored ${chunks.length} chunks (source: ${result.source})`);
