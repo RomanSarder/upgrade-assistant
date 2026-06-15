@@ -8,8 +8,10 @@ const LEVEL2_MAX_CHARS = 1500;
 // Level 3: fallback chunk size and overlap for pure prose
 const LEVEL3_CHUNK_SIZE = 1000;
 const LEVEL3_OVERLAP = 100;
-// Only ## and ### trigger structural splitting; # is document title, #### is too fine-grained
-const SECTION_HEADER_RE = /^#{2,3} /;
+// Only ## triggers structural splitting; ### subheaders stay inside their parent ## section as
+// content, not as chunk boundaries. Splitting on ### produces orphan header chunks with no
+// content that score well in retrieval but carry no signal. # is document title, #### is too fine-grained.
+const SECTION_HEADER_RE = /^## /;
 const LIST_ITEM_RE = /^[-*] /;
 
 const EMBED_BATCH_SIZE = 128;
@@ -82,7 +84,7 @@ function splitOnListBoundaries(header: string, body: string, bodyOffset: number)
   }));
 }
 
-// Level 1: split on ## / ### headers — each section is a semantically complete unit, ideal for retrieval.
+// Level 1: split on ## headers — each section is a semantically complete unit, ideal for retrieval.
 // Falls back to Level 2 for oversized sections with list items, or Level 3 for prose-only oversized sections.
 export async function splitIntoChunks(text: string): Promise<Chunk[]> {
   if (text.length === 0) return [];

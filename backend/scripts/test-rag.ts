@@ -53,6 +53,18 @@ const TEST_CASES = [
     to: "1.0.0",
     keywords: ["CancelToken", "interceptor"],
   },
+  {
+    package: "express",
+    from: "4.0.0",
+    to: "5.0.0",
+    keywords: ["path-to-regexp", "deprecated", "Node"],
+  },
+  {
+    package: "eslint",
+    from: "7.0.0",
+    to: "8.0.0",
+    keywords: ["flat", "config", "plugin"],
+  },
 ];
 
 async function runTest(

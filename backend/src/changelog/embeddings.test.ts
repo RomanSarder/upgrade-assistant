@@ -35,19 +35,21 @@ describe("splitIntoChunks – Level 1: section headers", () => {
     expect(b.text).toMatch(/^## Bug Fixes/);
   });
 
-  it("three ### sections → exactly 3 chunks", async () => {
+  it("### sections do NOT trigger Level 1 splitting — treated as content", async () => {
     const text = "### A\n\ncontent a\n\n### B\n\ncontent b\n\n### C\n\ncontent c";
     const chunks = await splitIntoChunks(text);
-    expect(chunks).toHaveLength(3);
+    // No ## headers → falls to Level 3 prose; short enough to be 1 chunk
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0].text).toBe(text);
   });
 
-  it("mixed ## and ### both trigger Level 1 splits", async () => {
+  it("### subheaders stay inside their parent ## section (no Level 1 split on ###)", async () => {
     const text = "## Release 1\n\nSome notes.\n\n### Sub-feature\n\nDetails.\n\n## Release 2\n\nMore notes.";
     const chunks = await splitIntoChunks(text);
-    expect(chunks).toHaveLength(3);
+    expect(chunks).toHaveLength(2);
     expect(chunks[0].text).toMatch(/^## Release 1/);
-    expect(chunks[1].text).toMatch(/^### Sub-feature/);
-    expect(chunks[2].text).toMatch(/^## Release 2/);
+    expect(chunks[0].text).toContain("### Sub-feature");
+    expect(chunks[1].text).toMatch(/^## Release 2/);
   });
 
   it("header is included in the chunk text (not stripped)", async () => {
