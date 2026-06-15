@@ -1,0 +1,2 @@
+DROP INDEX "changelog_chunks_unique_chunk";--> statement-breakpoint
+CREATE UNIQUE INDEX "changelog_chunks_unique_chunk" ON "changelog_chunks" USING btree ("package_name","from_version","to_version","version","start_offset");

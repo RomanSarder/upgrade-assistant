@@ -4,7 +4,7 @@ import { buildApp, mockDb } from "../test-utils";
 import packagesPlugin from "./index";
 
 function build() {
-  const app = buildApp(mockDb(null));
+  const app = buildApp(mockDb([]));
   app.register(multipart);
   app.register(packagesPlugin);
   return app;

@@ -1,0 +1,1 @@
+ALTER TABLE "changelog_chunks" ADD COLUMN "changelog_embedding" vector(1024);

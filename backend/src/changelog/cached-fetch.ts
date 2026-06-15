@@ -2,6 +2,7 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type { ChangelogResult } from "./types";
 import { fetchChangelog } from "./fetch";
 import { findCached, insertChunks } from "./repository";
+import { chunkAndEmbed } from "./embeddings";
 
 export async function fetchChangelogWithCache(
   db: PostgresJsDatabase<any>,
@@ -15,7 +16,8 @@ export async function fetchChangelogWithCache(
   const result = await fetchChangelog(packageName, fromVersion, toVersion);
 
   if (result.status === "found") {
-    await insertChunks(db, packageName, fromVersion, toVersion, result.slices, result.source);
+    const chunks = await chunkAndEmbed(result.slices);
+    await insertChunks(db, packageName, fromVersion, toVersion, chunks, result.source);
   }
 
   return result;
