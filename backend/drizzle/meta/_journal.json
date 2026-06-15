@@ -43,6 +43,13 @@
       "when": 1781523652960,
       "tag": "0005_clumsy_hiroim",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781548566620,
+      "tag": "0006_charming_emma_frost",
+      "breakpoints": true
     }
   ]
 }

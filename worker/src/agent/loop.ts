@@ -10,11 +10,14 @@ import { AGENT_TOOLS } from "@backend/agent/tools";
 import { fetchChangelogWithCache } from "@backend/changelog/cached-fetch";
 import { queryChangelog } from "@backend/changelog/repository";
 import * as schema from "@backend/db/schema";
-import { packages, upgradeRecommendations } from "@backend/db/schema";
+import { packages, upgradeRecommendations, analysisRuns } from "@backend/db/schema";
 
 type Db = PostgresJsDatabase<typeof schema>;
 
 const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+
+const INPUT_COST_PER_MILLION_TOKENS = 3;
+const OUTPUT_COST_PER_MILLION_TOKENS = 15;
 
 interface SynthesiseFinding {
   package: string;
@@ -154,8 +157,8 @@ export async function runAgentLoop(jobId: string, repoId: string, log: Logger): 
   // Dedicated publisher per invocation — never shared across concurrent calls.
   // Rejected publishes are swallowed to avoid unhandled-rejection crashes;
   // Redis connectivity issues surface through missing events rather than process death.
-  const emit = (event: object): void => {
-    publisher.publish(`job:${jobId}`, JSON.stringify(event)).catch(() => {});
+  const emit = (event: object): Promise<void> => {
+    return publisher.publish(`job:${jobId}`, JSON.stringify(event)).then(() => {}).catch(() => {});
   };
 
   try {
@@ -166,6 +169,9 @@ export async function runAgentLoop(jobId: string, repoId: string, log: Logger): 
 
     log.info({ packageCount: pkgs.length }, "agent loop started");
     emit({ type: "started", payload: { total: pkgs.length } });
+
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
 
     for (const pkg of pkgs) {
       let riskLevel = "unknown";
@@ -219,6 +225,12 @@ export async function runAgentLoop(jobId: string, repoId: string, log: Logger): 
             durationMs: Date.now() - apiStart,
             iteration,
           }, "claude api call");
+
+          totalInputTokens +=
+            response.usage.input_tokens +
+            (response.usage.cache_creation_input_tokens ?? 0) +
+            (response.usage.cache_read_input_tokens ?? 0);
+          totalOutputTokens += response.usage.output_tokens;
 
           messages.push({ role: "assistant", content: response.content });
 
@@ -277,7 +289,27 @@ export async function runAgentLoop(jobId: string, repoId: string, log: Logger): 
       emit({ type: "package_done", payload: { package: pkg.packageName, risk_level: riskLevel } });
     }
 
-    emit({ type: "done" });
+    const totalTokens = totalInputTokens + totalOutputTokens;
+    const costUsd =
+      (totalInputTokens / 1_000_000) * INPUT_COST_PER_MILLION_TOKENS +
+      (totalOutputTokens / 1_000_000) * OUTPUT_COST_PER_MILLION_TOKENS;
+
+    try {
+      await db
+        .insert(analysisRuns)
+        .values({ jobId, repoId, costUsd, tokensUsed: totalTokens })
+        .onConflictDoUpdate({
+          target: analysisRuns.jobId,
+          set: { costUsd, tokensUsed: totalTokens },
+        });
+    } catch (err) {
+      log.error({ err }, "failed to persist analysis run cost");
+    }
+
+    await emit({
+      type: "done",
+      payload: { cost_usd: costUsd, tokens_used: totalTokens },
+    });
     log.info({ packageCount: pkgs.length }, "agent loop completed");
   } finally {
     await pgClient.end();

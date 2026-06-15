@@ -42,5 +42,12 @@ export function buildApp(db: any): FastifyInstance {
   app.register(sensible);
   app.register(cookie);
   app.decorate("db", db);
+  app.decorate("config", {
+    REDIS_URL: "redis://localhost:6379",
+    DATABASE_URL: "postgres://localhost/test",
+    NODE_ENV: "test" as const,
+    ANTHROPIC_API_KEY: "test-key",
+    VOYAGE_API_KEY: "test-key",
+  });
   return app;
 }

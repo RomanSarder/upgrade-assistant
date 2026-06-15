@@ -3,6 +3,13 @@ import multipart from "@fastify/multipart";
 import { buildApp, mockDb } from "./src/test-utils";
 import packagesPlugin from "./src/packages/index";
 
+vi.mock("bullmq", () => ({
+  Queue: class {
+    add = vi.fn().mockResolvedValue(undefined);
+    close = vi.fn().mockResolvedValue(undefined);
+  },
+}));
+
 function build() {
   const app = buildApp(mockDb(null));
   app.register(multipart);
@@ -23,25 +30,8 @@ function makeFormFile(content: string, mimeType = "application/json") {
   return { body, headers: { "content-type": `multipart/form-data; boundary=${boundary}` } };
 }
 
-function mockNpm(versions: Record<string, string | null>) {
-  vi.spyOn(global, "fetch").mockImplementation(async (url) => {
-    const name = String(url)
-      .replace("https://registry.npmjs.org/", "")
-      .replace("/latest", "");
-    const version = versions[decodeURIComponent(name)];
-    if (version === null || version === undefined) {
-      return new Response("", { status: 404 });
-    }
-    return new Response(JSON.stringify({ version }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  });
-}
-
-describe("Test Error", () => {
-  it("shows error", async () => {
-    mockNpm({ fastify: "5.2.1" });
+describe("POST /packages/analyse (smoke)", () => {
+  it("returns 202 with jobId for a valid package.json", async () => {
     const app = build();
     const pkg = { dependencies: { fastify: "^5.0.0" } };
     const { body, headers } = makeFormFile(JSON.stringify(pkg));
@@ -51,7 +41,7 @@ describe("Test Error", () => {
       payload: body,
       headers,
     });
-    console.log("Status:", res.statusCode);
-    console.log("Response:", res.json());
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toMatchObject({ jobId: expect.any(String) });
   });
 });

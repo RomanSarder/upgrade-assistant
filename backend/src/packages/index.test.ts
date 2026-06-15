@@ -3,6 +3,13 @@ import multipart from "@fastify/multipart";
 import { buildApp, mockDb } from "../test-utils";
 import packagesPlugin from "./index";
 
+vi.mock("bullmq", () => ({
+  Queue: class {
+    add = vi.fn().mockResolvedValue(undefined);
+    close = vi.fn().mockResolvedValue(undefined);
+  },
+}));
+
 function build() {
   const app = buildApp(mockDb([]));
   app.register(multipart);
@@ -23,22 +30,6 @@ function makeFormFile(content: string, mimeType = "application/json") {
   return { body, headers: { "content-type": `multipart/form-data; boundary=${boundary}` } };
 }
 
-function mockNpm(versions: Record<string, string | null>) {
-  vi.spyOn(global, "fetch").mockImplementation(async (url) => {
-    const name = String(url)
-      .replace("https://registry.npmjs.org/", "")
-      .replace("/latest", "");
-    const version = versions[decodeURIComponent(name)];
-    if (version === null || version === undefined) {
-      return new Response("", { status: 404 });
-    }
-    return new Response(JSON.stringify({ version }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  });
-}
-
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -47,7 +38,6 @@ describe("POST /packages/analyse", () => {
   it("returns 400 when no file field is in the multipart body", async () => {
     const app = build();
     const boundary = "test-boundary";
-    // Send a multipart request with a text field but no file part
     const body = Buffer.from(
       `--${boundary}\r\n` +
       `Content-Disposition: form-data; name="other"\r\n` +
@@ -100,8 +90,7 @@ describe("POST /packages/analyse", () => {
     expect(res.statusCode).toBe(400);
   });
 
-  it("returns 200 with empty array when package.json has no deps", async () => {
-    mockNpm({});
+  it("returns 202 with a jobId when package.json has no deps", async () => {
     const app = build();
     const { body, headers } = makeFormFile(JSON.stringify({ name: "my-app", version: "1.0.0" }));
     const res = await app.inject({
@@ -110,12 +99,11 @@ describe("POST /packages/analyse", () => {
       payload: body,
       headers,
     });
-    expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual([]);
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toMatchObject({ jobId: expect.any(String) });
   });
 
-  it("returns upgradeAvailable: true for an outdated prod dependency", async () => {
-    mockNpm({ fastify: "5.2.1" });
+  it("returns 202 with a jobId for prod dependencies", async () => {
     const app = build();
     const pkg = { dependencies: { fastify: "^5.0.0" } };
     const { body, headers } = makeFormFile(JSON.stringify(pkg));
@@ -125,19 +113,11 @@ describe("POST /packages/analyse", () => {
       payload: body,
       headers,
     });
-    expect(res.statusCode).toBe(200);
-    const [result] = res.json();
-    expect(result).toMatchObject({
-      name: "fastify",
-      currentVersion: "^5.0.0",
-      latestVersion: "5.2.1",
-      isDev: false,
-      upgradeAvailable: true,
-    });
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toMatchObject({ jobId: expect.any(String) });
   });
 
-  it("returns upgradeAvailable: false for an up-to-date dev dependency", async () => {
-    mockNpm({ vitest: "4.1.8" });
+  it("returns 202 with a jobId for dev dependencies", async () => {
     const app = build();
     const pkg = { devDependencies: { vitest: "^4.1.8" } };
     const { body, headers } = makeFormFile(JSON.stringify(pkg));
@@ -147,17 +127,11 @@ describe("POST /packages/analyse", () => {
       payload: body,
       headers,
     });
-    expect(res.statusCode).toBe(200);
-    const [result] = res.json();
-    expect(result).toMatchObject({
-      name: "vitest",
-      isDev: true,
-      upgradeAvailable: false,
-    });
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toMatchObject({ jobId: expect.any(String) });
   });
 
-  it("sets isDev correctly for mixed prod and dev deps", async () => {
-    mockNpm({ fastify: "5.0.0", vitest: "4.1.8" });
+  it("returns 202 with a jobId for mixed prod and dev deps", async () => {
     const app = build();
     const pkg = {
       dependencies: { fastify: "5.0.0" },
@@ -170,14 +144,11 @@ describe("POST /packages/analyse", () => {
       payload: body,
       headers,
     });
-    expect(res.statusCode).toBe(200);
-    const results = res.json();
-    expect(results.find((r: any) => r.name === "fastify").isDev).toBe(false);
-    expect(results.find((r: any) => r.name === "vitest").isDev).toBe(true);
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toMatchObject({ jobId: expect.any(String) });
   });
 
-  it("returns latestVersion: null and upgradeAvailable: false when npm returns 404", async () => {
-    mockNpm({ "unknown-pkg": null });
+  it("returns 202 with a jobId regardless of versions present", async () => {
     const app = build();
     const pkg = { dependencies: { "unknown-pkg": "1.0.0" } };
     const { body, headers } = makeFormFile(JSON.stringify(pkg));
@@ -187,12 +158,7 @@ describe("POST /packages/analyse", () => {
       payload: body,
       headers,
     });
-    expect(res.statusCode).toBe(200);
-    const [result] = res.json();
-    expect(result).toMatchObject({
-      name: "unknown-pkg",
-      latestVersion: null,
-      upgradeAvailable: false,
-    });
+    expect(res.statusCode).toBe(202);
+    expect(res.json()).toMatchObject({ jobId: expect.any(String) });
   });
 });
