@@ -289,9 +289,15 @@ export async function runPackageAgentLoop(
             changelogHasData = (result as Record<string, unknown>)?.status === "found";
           }
           if (block.name === "synthesise_risk") {
-            synthesiseCalled = true;
             const raw = (block.input as { findings?: unknown }).findings;
-            capturedFindings = Array.isArray(raw) ? (raw as SynthesiseFinding[]) : [];
+            const parsed = Array.isArray(raw) ? (raw as SynthesiseFinding[]) : [];
+            if (parsed.length > 0) {
+              synthesiseCalled = true;
+              capturedFindings = parsed;
+            } else {
+              result = { error: "findings array must not be empty — include one entry per package analysed" };
+              isError = true;
+            }
           }
         } catch (err) {
           isError = true;
