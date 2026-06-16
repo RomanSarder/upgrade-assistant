@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { apiClient, ApiError } from "../shared/api";
 import { DotBackground } from "../shared/ui";
 import { AnalysisForm } from "./AnalysisForm";
@@ -29,6 +30,7 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
 export function AnalysisPage() {
   const isDemo = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("demo") === "1";
 
+  const navigate = useNavigate();
   const [pageState, setPageState] = useState<PageState>("idle");
   const [jobId, setJobId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -51,6 +53,10 @@ export function AnalysisPage() {
       });
       setJobId(id);
     } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        navigate({ to: "/sign-in" });
+        return;
+      }
       setPageState("error");
       setErrorMessage(
         err instanceof ApiError && err.message

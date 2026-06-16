@@ -1,6 +1,10 @@
 import { FastifyPluginAsync } from "fastify";
 import { Queue } from "bullmq";
+import { eq } from "drizzle-orm";
+import { users } from "../db/schema";
 import streamPlugin from "./stream";
+
+const DEMO_BUDGET_USD = 2.00;
 
 interface PackageEntry {
   name: string;
@@ -28,7 +32,20 @@ const packages: FastifyPluginAsync = async (fastify) => {
   fastify.register(async (fastify) => {
     fastify.register(streamPlugin);
 
-    fastify.post("/analyse", async (request, reply) => {
+    fastify.post("/analyse", { preHandler: fastify.authenticate }, async (request, reply) => {
+      const [user] = await fastify.db
+        .select({ costUsdUsed: users.costUsdUsed })
+        .from(users)
+        .where(eq(users.id, request.userId));
+
+      if (Number(user?.costUsdUsed ?? 0) >= DEMO_BUDGET_USD) {
+        return reply.code(402).send({
+          error: "Demo budget reached",
+          limit: DEMO_BUDGET_USD,
+          used: Number(user?.costUsdUsed ?? 0),
+        });
+      }
+
       let data;
       try {
         data = await request.file();
@@ -83,7 +100,7 @@ const packages: FastifyPluginAsync = async (fastify) => {
       ];
 
       const jobId = crypto.randomUUID();
-      await packagesQueue.add("analyse", { jobId, entries }, { jobId });
+      await packagesQueue.add("analyse", { jobId, entries, userId: request.userId }, { jobId });
 
       return reply.code(202).send({ jobId });
     });

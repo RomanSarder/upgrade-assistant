@@ -4,12 +4,14 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import Redis from "ioredis";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { runPackageAgentLoop, type SynthesiseFinding, INPUT_COST_PER_MILLION_TOKENS, OUTPUT_COST_PER_MILLION_TOKENS } from "./run-package";
 import * as schema from "@backend/db/schema";
-import { packages, upgradeRecommendations, analysisRuns } from "@backend/db/schema";
+import { packages, upgradeRecommendations, analysisRuns, users } from "@backend/db/schema";
 
 type Db = PostgresJsDatabase<typeof schema>;
+
+const DEMO_BUDGET_USD = 2.00;
 
 async function handleSynthesiseRisk(
   db: Db,
@@ -34,7 +36,7 @@ async function handleSynthesiseRisk(
   ).onConflictDoNothing();
 }
 
-export async function runAgentLoop(jobId: string, repoId: string, log: Logger): Promise<void> {
+export async function runAgentLoop(jobId: string, repoId: string, userId: string, log: Logger): Promise<void> {
   const pgClient = postgres(env.DATABASE_URL);
   const db = drizzle(pgClient, { schema });
   const publisher = new Redis(env.REDIS_URL);
@@ -44,6 +46,18 @@ export async function runAgentLoop(jobId: string, repoId: string, log: Logger): 
   };
 
   try {
+    if (userId) {
+      const [currentUser] = await db
+        .select({ costUsdUsed: users.costUsdUsed })
+        .from(users)
+        .where(eq(users.id, userId));
+      if (currentUser && Number(currentUser.costUsdUsed) >= DEMO_BUDGET_USD) {
+        log.warn({ userId, costUsdUsed: currentUser.costUsdUsed }, "user over budget, skipping analysis");
+        await emit({ type: "done", payload: { cost_usd: 0, tokens_used: 0 } });
+        return;
+      }
+    }
+
     const pkgs = await db
       .select()
       .from(packages)
@@ -104,6 +118,17 @@ export async function runAgentLoop(jobId: string, repoId: string, log: Logger): 
         });
     } catch (err) {
       log.error({ err }, "failed to persist analysis run cost");
+    }
+
+    if (userId && costUsd > 0) {
+      try {
+        await db
+          .update(users)
+          .set({ costUsdUsed: sql`${users.costUsdUsed} + ${costUsd}` })
+          .where(eq(users.id, userId));
+      } catch (err) {
+        log.error({ err }, "failed to increment user cost");
+      }
     }
 
     await emit({

@@ -15,7 +15,7 @@ export async function apiClient<T = unknown>(path: string, options?: RequestInit
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, body.message ?? res.statusText);
+    throw new ApiError(res.status, body.message ?? body.error ?? res.statusText);
   }
   const text = await res.text();
   if (!text) return null as T;

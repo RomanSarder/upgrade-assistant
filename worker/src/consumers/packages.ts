@@ -16,6 +16,7 @@ interface PackageEntry {
 interface PackagesJobData {
   jobId: string;
   entries: PackageEntry[];
+  userId: string;
 }
 
 const { hostname: host, port: portStr, password } = new URL(env.REDIS_URL);
@@ -61,7 +62,7 @@ async function mapConcurrent<T, R>(
 export const packagesWorker = new Worker<PackagesJobData>(
   "packages",
   async (job) => {
-    const { jobId, entries } = job.data;
+    const { jobId, entries, userId } = job.data;
     const repoId = jobId;
     const log = rootLogger.child({ jobId, bullJobId: job.id });
     log.info({ entryCount: entries.length }, "packages job received");
@@ -108,7 +109,7 @@ export const packagesWorker = new Worker<PackagesJobData>(
         });
       });
 
-      const queued = await analysisQueue.add("analyse", { jobId, repoId }, { jobId: `analysis-${jobId}` });
+      const queued = await analysisQueue.add("analyse", { jobId, repoId, userId }, { jobId: `analysis-${jobId}` });
       if (queued) {
         log.info("analysis job enqueued");
       } else {

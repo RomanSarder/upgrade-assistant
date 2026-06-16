@@ -7,6 +7,7 @@ import { jobLogger, rootLogger } from "../logger";
 interface AnalysisJobData {
   jobId: string;
   repoId: string;
+  userId: string;
 }
 
 // ioredis only parses a Redis URL when the constructor receives a bare string.
@@ -18,12 +19,12 @@ const redisPort = parseInt(portStr) || 6379;
 export const analysisWorker = new Worker<AnalysisJobData>(
   "analysis",
   async (job) => {
-    const { jobId, repoId } = job.data;
+    const { jobId, repoId, userId } = job.data;
     const log = jobLogger(jobId, repoId);
     log.info({ bullJobId: job.id }, "job received");
 
     const start = Date.now();
-    await runAgentLoop(jobId, repoId, log);
+    await runAgentLoop(jobId, repoId, userId, log);
     log.info({ durationMs: Date.now() - start }, "job completed");
   },
   {

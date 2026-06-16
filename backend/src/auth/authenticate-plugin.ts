@@ -9,9 +9,14 @@ declare module "fastify" {
   interface FastifyInstance {
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
+  interface FastifyRequest {
+    userId: string;
+  }
 }
 
 export default fp(async (fastify) => {
+  fastify.decorateRequest("userId", "");
+
   fastify.decorate("authenticate", async (request: FastifyRequest, reply: FastifyReply) => {
     const cookie = request.cookies["upgrade_advisor_token"];
 
@@ -36,6 +41,8 @@ export default fp(async (fastify) => {
     if (session.expiresAt < new Date()) {
       return reply.unauthorized();
     }
+
+    request.userId = session.userId;
 
     await fastify.db
       .update(sessions)
