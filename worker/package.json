@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
+    "tsx": "^4.22.4",
     "bullmq": "^5",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
@@ -22,7 +23,6 @@
     "@types/node": "^25.9.2",
     "@types/semver": "^7.7.1",
     "pino-pretty": "^13",
-    "tsx": "^4.22.4",
     "typescript": "~5.9.2"
   }
 }
