@@ -20,6 +20,11 @@ export interface AnalysisRow {
   breaking_changes?: string;
 }
 
+export interface Budget {
+  limit: number;
+  used: number;
+}
+
 export interface StreamLogEntry {
   id: number;
   text: string;

@@ -11,19 +11,22 @@ interface UseAnalysisStreamResult {
   analysisRows: AnalysisRow[];
   summaryCounts: Record<string, number>;
   finalCost: { tokens_used: number; cost_usd: number } | null;
+  runningCost: number;
   currentActivity: CurrentActivity;
 }
 
 export function useAnalysisStream(
   jobId: string | null,
   active: boolean,
-  onDone: () => void,
+  onDone: (costUsd: number) => void,
   onError: (message: string) => void,
+  onBudgetExceeded: (costUsd: number) => void,
 ): UseAnalysisStreamResult {
   const [logEntries, setLogEntries] = useState<StreamLogEntry[]>([]);
   const [analysisRows, setAnalysisRows] = useState<AnalysisRow[]>([]);
   const [summaryCounts, setSummaryCounts] = useState<Record<string, number>>({});
   const [finalCost, setFinalCost] = useState<{ tokens_used: number; cost_usd: number } | null>(null);
+  const [runningCost, setRunningCost] = useState(0);
   const [currentPackage, setCurrentPackage] = useState<string | null>(null);
   const [currentToolName, setCurrentToolName] = useState<string | null>(null);
 
@@ -31,20 +34,25 @@ export function useAnalysisStream(
   const packageMetaRef = useRef<Record<string, { from_version: string; to_version: string }>>({});
   const onDoneRef = useRef(onDone);
   const onErrorRef = useRef(onError);
+  const onBudgetExceededRef = useRef(onBudgetExceeded);
   onDoneRef.current = onDone;
   onErrorRef.current = onError;
+  onBudgetExceededRef.current = onBudgetExceeded;
 
   useEffect(() => {
-    if (!active || !jobId) return;
+    if (!active) return;
 
     setLogEntries([]);
     setAnalysisRows([]);
     setSummaryCounts({});
     setFinalCost(null);
+    setRunningCost(0);
     setCurrentPackage(null);
     setCurrentToolName(null);
     logCounterRef.current = 0;
     packageMetaRef.current = {};
+
+    if (!jobId) return;
 
     const addLog = (text: string, kind: LogEntryKind = "info", riskLevel?: RiskLevel) => {
       setLogEntries((prev) => [...prev, { id: logCounterRef.current++, text, kind, riskLevel }]);
@@ -137,16 +145,27 @@ export function useAnalysisStream(
           setCurrentToolName(null);
           break;
         }
+        case "cost_update": {
+          const p = event.payload as { cost_usd: number };
+          setRunningCost(p.cost_usd);
+          break;
+        }
         case "done": {
           const p = event.payload as { cost_usd: number; tokens_used: number };
           source.close();
           setFinalCost(p);
-          onDoneRef.current();
+          onDoneRef.current(p.cost_usd);
           break;
         }
         case "error": {
           const p = event.payload as { message?: string };
           onErrorRef.current(p.message ?? "Analysis failed.");
+          break;
+        }
+        case "budget_exceeded": {
+          const p = event.payload as { cost_usd: number };
+          source.close();
+          onBudgetExceededRef.current(p.cost_usd);
           break;
         }
       }
@@ -166,5 +185,5 @@ export function useAnalysisStream(
     return () => { source.close(); };
   }, [jobId, active]);
 
-  return { logEntries, analysisRows, summaryCounts, finalCost, currentActivity: { currentPackage, currentToolName } };
+  return { logEntries, analysisRows, summaryCounts, finalCost, runningCost, currentActivity: { currentPackage, currentToolName } };
 }

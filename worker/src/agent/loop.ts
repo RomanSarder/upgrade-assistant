@@ -8,10 +8,9 @@ import { and, eq, sql } from "drizzle-orm";
 import { runPackageAgentLoop, type SynthesiseFinding, INPUT_COST_PER_MILLION_TOKENS, OUTPUT_COST_PER_MILLION_TOKENS } from "./run-package";
 import * as schema from "@backend/db/schema";
 import { packages, upgradeRecommendations, analysisRuns, users } from "@backend/db/schema";
+import { DEMO_BUDGET_USD } from "@upgrade-advisor/shared";
 
 type Db = PostgresJsDatabase<typeof schema>;
-
-const DEMO_BUDGET_USD = 2.00;
 
 async function handleSynthesiseRisk(
   db: Db,
@@ -46,14 +45,16 @@ export async function runAgentLoop(jobId: string, repoId: string, userId: string
   };
 
   try {
+    let startingCostUsdUsed = 0;
     if (userId) {
       const [currentUser] = await db
         .select({ costUsdUsed: users.costUsdUsed })
         .from(users)
         .where(eq(users.id, userId));
-      if (currentUser && Number(currentUser.costUsdUsed) >= DEMO_BUDGET_USD) {
-        log.warn({ userId, costUsdUsed: currentUser.costUsdUsed }, "user over budget, skipping analysis");
-        await emit({ type: "done", payload: { cost_usd: 0, tokens_used: 0 } });
+      if (currentUser) startingCostUsdUsed = Number(currentUser.costUsdUsed);
+      if (startingCostUsdUsed >= DEMO_BUDGET_USD) {
+        log.warn({ userId, costUsdUsed: startingCostUsdUsed }, "user over budget, skipping analysis");
+        await emit({ type: "budget_exceeded", payload: { cost_usd: 0 } });
         return;
       }
     }
@@ -68,6 +69,7 @@ export async function runAgentLoop(jobId: string, repoId: string, userId: string
 
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
+    let budgetExceededMidRun = false;
 
     for (const pkg of pkgs) {
       let riskLevel = "unknown";
@@ -101,7 +103,43 @@ export async function runAgentLoop(jobId: string, repoId: string, userId: string
 
       pkgLog.info({ durationMs: Date.now() - pkgStart, riskLevel }, "package analysis completed");
       emit({ type: "package_done", payload: { package: pkg.packageName, risk_level: riskLevel, breaking_changes: breakingChanges } });
+
+      const runningCostUsd =
+        (totalInputTokens / 1_000_000) * INPUT_COST_PER_MILLION_TOKENS +
+        (totalOutputTokens / 1_000_000) * OUTPUT_COST_PER_MILLION_TOKENS;
+      emit({ type: "cost_update", payload: { cost_usd: runningCostUsd } });
+
+      if (startingCostUsdUsed + runningCostUsd >= DEMO_BUDGET_USD) {
+        budgetExceededMidRun = true;
+        const totalTokensSoFar = totalInputTokens + totalOutputTokens;
+        try {
+          await db
+            .insert(analysisRuns)
+            .values({ jobId, repoId, costUsd: runningCostUsd, tokensUsed: totalTokensSoFar })
+            .onConflictDoUpdate({
+              target: analysisRuns.jobId,
+              set: { costUsd: runningCostUsd, tokensUsed: totalTokensSoFar },
+            });
+        } catch (err) {
+          log.error({ err }, "failed to persist partial analysis run cost");
+        }
+        if (userId && runningCostUsd > 0) {
+          try {
+            await db
+              .update(users)
+              .set({ costUsdUsed: sql`${users.costUsdUsed} + ${runningCostUsd}` })
+              .where(eq(users.id, userId));
+          } catch (err) {
+            log.error({ err }, "failed to increment user cost on budget exceeded");
+          }
+        }
+        log.warn({ userId, startingCostUsdUsed, runningCostUsd }, "budget exceeded mid-run, stopping");
+        await emit({ type: "budget_exceeded", payload: { cost_usd: runningCostUsd } });
+        break;
+      }
     }
+
+    if (budgetExceededMidRun) return;
 
     const totalTokens = totalInputTokens + totalOutputTokens;
     const costUsd =

@@ -1,4 +1,4 @@
-import type { AnalysisRow, StreamLogEntry } from "./types";
+import type { AnalysisRow, Budget, StreamLogEntry } from "./types";
 
 export const DEMO_LOG_ENTRIES: StreamLogEntry[] = [
   { id: 0,  kind: "package_start",     text: "react  17.0.2 → 18.2.0" },
@@ -75,3 +75,5 @@ export const DEMO_ROWS: AnalysisRow[] = [
 export const DEMO_SUMMARY: Record<string, number> = { breaking: 1, high: 1, medium: 1, low: 1, safe: 1 };
 
 export const DEMO_COST = { tokens_used: 48320, cost_usd: 0.0876 };
+
+export const DEMO_BUDGET: Budget = { limit: 2.00, used: 0.87 };

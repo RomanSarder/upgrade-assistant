@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "cost_usd_used" numeric(10, 4) DEFAULT '0' NOT NULL;

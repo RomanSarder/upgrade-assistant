@@ -47,7 +47,7 @@ const stream: FastifyPluginAsync = async (fastify) => {
         } catch {
           // malformed message — keep connection open
         }
-        if (parsed?.type === "done" || parsed?.type === "error") {
+        if (parsed?.type === "done" || parsed?.type === "error" || parsed?.type === "budget_exceeded") {
           cleanup();
         }
       });

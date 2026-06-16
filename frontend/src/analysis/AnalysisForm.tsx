@@ -1,11 +1,14 @@
 import { useRef, useState } from "react";
 import { Card, Wordmark } from "../shared/ui";
+import { BudgetMeter } from "./BudgetMeter";
+import type { Budget } from "./types";
 
 interface Props {
   onSubmit: (formData: FormData) => void;
+  budget: Budget | null;
 }
 
-export function AnalysisForm({ onSubmit }: Props) {
+export function AnalysisForm({ onSubmit, budget }: Props) {
   const [pasteText, setPasteText] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,6 +77,11 @@ export function AnalysisForm({ onSubmit }: Props) {
               Analyse
             </button>
           </form>
+          {budget && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <BudgetMeter limit={budget.limit} used={budget.used} />
+            </div>
+          )}
         </div>
       </div>
     </Card>

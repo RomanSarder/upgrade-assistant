@@ -3,8 +3,7 @@ import { Queue } from "bullmq";
 import { eq } from "drizzle-orm";
 import { users } from "../db/schema";
 import streamPlugin from "./stream";
-
-const DEMO_BUDGET_USD = 2.00;
+import { DEMO_BUDGET_USD } from "@upgrade-advisor/shared";
 
 interface PackageEntry {
   name: string;
@@ -31,6 +30,16 @@ const packages: FastifyPluginAsync = async (fastify) => {
 
   fastify.register(async (fastify) => {
     fastify.register(streamPlugin);
+
+    fastify.get("/budget", { preHandler: fastify.authenticate }, async (request, reply) => {
+      const [user] = await fastify.db
+        .select({ costUsdUsed: users.costUsdUsed })
+        .from(users)
+        .where(eq(users.id, request.userId));
+
+      const used = Number(user?.costUsdUsed ?? 0);
+      return { limit: DEMO_BUDGET_USD, used, remaining: Math.max(0, DEMO_BUDGET_USD - used) };
+    });
 
     fastify.post("/analyse", { preHandler: fastify.authenticate }, async (request, reply) => {
       const [user] = await fastify.db

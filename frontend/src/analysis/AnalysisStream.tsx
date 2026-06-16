@@ -17,9 +17,10 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import type { AnalysisRow, RiskLevel, StreamLogEntry } from "./types";
+import type { AnalysisRow, Budget, RiskLevel, StreamLogEntry } from "./types";
 import type { CurrentActivity } from "./useAnalysisStream";
 import { ActivityStatus } from "./ActivityStatus";
+import { BudgetMeter } from "./BudgetMeter";
 
 const RISK_CONFIG: Record<
   RiskLevel,
@@ -320,29 +321,42 @@ interface Props {
   analysisRows: AnalysisRow[];
   summaryCounts: Record<string, number>;
   finalCost: { tokens_used: number; cost_usd: number } | null;
+  runningCost: number;
+  budget: Budget | null;
   currentActivity: CurrentActivity;
   onReset: () => void;
 }
 
-export function AnalysisStream({ isStreaming, logEntries, analysisRows, summaryCounts, finalCost, currentActivity, onReset }: Props) {
+export function AnalysisStream({ isStreaming, logEntries, analysisRows, summaryCounts, finalCost, runningCost, budget, currentActivity, onReset }: Props) {
+  const displayedUsed = (budget?.used ?? 0) + (isStreaming ? runningCost : 0);
+
   return (
     <div className="min-h-screen">
       <div className="max-w-5xl mx-auto px-8 py-8 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-mono uppercase tracking-widest text-gray-500 mb-1">upgrade-advisor</p>
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
               {isStreaming ? "Analysing packages…" : "Analysis complete"}
             </h1>
           </div>
-          {!isStreaming && (
-            <button
-              onClick={onReset}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-all duration-150 hover:bg-gray-50 hover:border-gray-300 active:scale-[0.99]"
-            >
-              Analyse another
-            </button>
-          )}
+          <div className="flex items-center gap-4 pt-1">
+            {budget && (
+              <BudgetMeter
+                limit={budget.limit}
+                used={displayedUsed}
+                isAccumulating={isStreaming}
+              />
+            )}
+            {!isStreaming && (
+              <button
+                onClick={onReset}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-all duration-150 hover:bg-gray-50 hover:border-gray-300 active:scale-[0.99]"
+              >
+                Analyse another
+              </button>
+            )}
+          </div>
         </div>
 
         {isStreaming && <ActivityStatus currentActivity={currentActivity} completedCount={analysisRows.length} />}
@@ -352,11 +366,6 @@ export function AnalysisStream({ isStreaming, logEntries, analysisRows, summaryC
           <AnalysisResults rows={analysisRows} counts={summaryCounts} />
         )}
 
-        {!isStreaming && finalCost && (
-          <p className="text-center text-xs text-gray-500 font-mono">
-            {finalCost.tokens_used.toLocaleString()} tokens · ${finalCost.cost_usd.toFixed(4)}
-          </p>
-        )}
       </div>
     </div>
   );
