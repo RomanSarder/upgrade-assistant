@@ -85,11 +85,13 @@ describe("splitIntoChunks – Level 1: section headers", () => {
     expect(chunks[0].startOffset).toBe(0);
   });
 
-  it("section with only a header line and no body is still emitted as a chunk", async () => {
+  it("section with only a header line and no body is filtered out", async () => {
     const text = "## Empty Section\n## Another Section\n\nContent here.";
     const chunks = await splitIntoChunks(text);
     const emptySection = chunks.find((c) => c.text.startsWith("## Empty Section"));
-    expect(emptySection).toBeDefined();
+    expect(emptySection).toBeUndefined();
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0].text).toMatch(/^## Another Section/);
   });
 
   it("startOffset values are monotonically non-decreasing across all chunks", async () => {
@@ -287,11 +289,10 @@ describe("splitIntoChunks – edge cases", () => {
     expect(chunks.length).toBeLessThanOrEqual(1);
   });
 
-  it("text with only a ## header line and no body → 1 chunk containing just the header", async () => {
+  it("text with only a ## header line and no body → no chunks", async () => {
     const text = "## Empty Section";
     const chunks = await splitIntoChunks(text);
-    expect(chunks).toHaveLength(1);
-    expect(chunks[0].text).toContain("## Empty Section");
+    expect(chunks).toHaveLength(0);
   });
 
   it("# (H1) headers do NOT trigger Level 1 splitting", async () => {

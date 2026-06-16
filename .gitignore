@@ -68,3 +68,4 @@ dist
 .env
 .env.local
 .playwright-mcp
+eval-results

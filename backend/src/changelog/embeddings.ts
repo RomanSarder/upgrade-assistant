@@ -134,6 +134,7 @@ export async function splitIntoChunks(text: string): Promise<Chunk[]> {
     // and the final section ends with a phantom "\n" from the line-accumulation loop.
     // Stripping all trailing newlines keeps full.length accurate for the Level 2/3 size check.
     const trimmedBody = body.replace(/\n+$/, "");
+    if (!trimmedBody.trim()) continue;
     const full = header ? `${header}\n${trimmedBody}` : trimmedBody;
     if (full.length <= LEVEL2_MAX_CHARS) {
       result.push({ text: full, startOffset });

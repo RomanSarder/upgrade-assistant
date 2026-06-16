@@ -78,12 +78,13 @@ export async function queryChangelog(
   fromVersion: string,
   toVersion: string,
   limit: number,
-): Promise<ContentSlice[]> {
+): Promise<Array<ContentSlice & { distance: number }>> {
   if (!query.trim()) return [];
   const [queryEmbedding] = await embed([query]);
+  const dist = cosineDistance(changelogChunks.changelogEmbedding, queryEmbedding);
 
   return db
-    .select({ version: changelogChunks.version, content: changelogChunks.content })
+    .select({ version: changelogChunks.version, content: changelogChunks.content, distance: dist })
     .from(changelogChunks)
     .where(
       and(
@@ -93,8 +94,8 @@ export async function queryChangelog(
         gt(changelogChunks.fetchedAt, sql`NOW() - INTERVAL '7 days'`),
       ),
     )
-    .orderBy(asc(cosineDistance(changelogChunks.changelogEmbedding, queryEmbedding)))
-    .limit(limit);
+    .orderBy(asc(dist))
+    .limit(limit) as Promise<Array<ContentSlice & { distance: number }>>;
 }
 
 export async function insertChunks(

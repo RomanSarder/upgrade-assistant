@@ -12,6 +12,7 @@ import { fetchChangelog } from "../src/changelog/fetch";
 const DIVIDER = "━".repeat(40);
 const TOP_K = 5;
 const VERDICT_TOP_N = 3;
+const FULL_CONTENT = process.argv.includes("--full");
 // 3 RPM limit: wait 65s before retrying after a 429
 const RETRY_DELAY_MS = 65_000;
 
@@ -35,43 +36,51 @@ async function withRetry<T>(label: string, fn: () => Promise<T>, maxAttempts = 5
 }
 
 const TEST_CASES = [
+  // {
+  //   package: "chalk",
+  //   from: "4.0.0",
+  //   to: "5.0.0",
+  //   keywords: ["ESM", "require", "CommonJS"],
+  // },
+  // {
+  //   package: "uuid",
+  //   from: "7.0.0",
+  //   to: "8.0.0",
+  //   keywords: ["named", "export", "default"],
+  // },
+  // {
+  //   package: "axios",
+  //   from: "0.27.2",
+  //   to: "1.0.0",
+  //   keywords: ["CancelToken", "interceptor"],
+  // },
+  // {
+  //   package: "express",
+  //   from: "4.0.0",
+  //   to: "5.0.0",
+  //   keywords: ["path-to-regexp", "deprecated", "Node"],
+  // },
+  // {
+  //   package: "eslint",
+  //   from: "7.0.0",
+  //   to: "8.0.0",
+  //   keywords: ["flat", "config", "plugin"],
+  // },
   {
-    package: "chalk",
-    from: "4.0.0",
-    to: "5.0.0",
-    keywords: ["ESM", "require", "CommonJS"],
-  },
-  {
-    package: "uuid",
+    package: "@babel/core",
     from: "7.0.0",
-    to: "8.0.0",
-    keywords: ["named", "export", "default"],
-  },
-  {
-    package: "axios",
-    from: "0.27.2",
-    to: "1.0.0",
-    keywords: ["CancelToken", "interceptor"],
-  },
-  {
-    package: "express",
-    from: "4.0.0",
-    to: "5.0.0",
-    keywords: ["path-to-regexp", "deprecated", "Node"],
-  },
-  {
-    package: "eslint",
-    from: "7.0.0",
-    to: "8.0.0",
-    keywords: ["flat", "config", "plugin"],
-  },
+    to: "7.20.0",
+    // keywords: ["source map", "top-level await", "preset", "plugin"],
+    keywords: ["source map", "top-level await"],
+  }
 ];
 
 async function runTest(
   db: ReturnType<typeof drizzle>,
   tc: (typeof TEST_CASES)[number],
 ): Promise<boolean> {
-  const queryText = `what breaking changes exist in ${tc.package} between version ${tc.from} and ${tc.to}?`;
+  const queryText = `were there any changes to source map generation in ${tc.package} between version ${tc.from} and ${tc.to}?`
+  // const queryText = `what breaking changes exist in ${tc.package} between version ${tc.from} and ${tc.to}?`;
 
   console.log(`\n${DIVIDER}`);
   console.log(`PACKAGE: ${tc.package}  (${tc.from} → ${tc.to})`);
@@ -110,9 +119,13 @@ async function runTest(
 
   rows.forEach((row, i) => {
     const score = typeof row.score === "number" ? row.score.toFixed(4) : String(row.score);
-    const preview = row.content.slice(0, 300).replace(/\n/g, " ");
     console.log(`\n[${i + 1}] score: ${score}  version: ${row.version}  source: ${row.source}`);
-    console.log(`    "${preview}${row.content.length > 300 ? "…" : ""}"`);
+    if (FULL_CONTENT) {
+      console.log(row.content);
+    } else {
+      const preview = row.content.slice(0, 300).replace(/\n/g, " ");
+      console.log(`    "${preview}${row.content.length > 300 ? "…" : ""}"`);
+    }
   });
 
   const topChunks = rows.slice(0, VERDICT_TOP_N);

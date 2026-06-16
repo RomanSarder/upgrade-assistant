@@ -6,5 +6,8 @@
     "frontend",
     "packages/*",
     "worker"
-  ]
+  ],
+  "scripts": {
+    "eval": "tsx --tsconfig worker/tsconfig.json eval.ts"
+  }
 }

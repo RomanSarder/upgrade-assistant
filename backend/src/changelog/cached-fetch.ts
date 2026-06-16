@@ -10,9 +10,9 @@ export async function fetchChangelogWithCache(
   packageName: string,
   fromVersion: string,
   toVersion: string,
-): Promise<ChangelogResult> {
+): Promise<ChangelogResult & { cacheHit: boolean }> {
   const cached = await findCached(db, packageName, fromVersion, toVersion);
-  if (cached) return cached;
+  if (cached) return { ...cached, cacheHit: true };
 
   const result = await fetchChangelog(packageName, fromVersion, toVersion);
 
@@ -20,8 +20,8 @@ export async function fetchChangelogWithCache(
     const cleanedSlices = result.slices.map(s => ({ ...s, content: cleanChangelog(s.content) }));
     const chunks = await chunkAndEmbed(cleanedSlices);
     await insertChunks(db, packageName, fromVersion, toVersion, chunks, result.source);
-    return { ...result, slices: cleanedSlices, content: cleanedSlices.map(s => s.content).join("\n\n") };
+    return { ...result, slices: cleanedSlices, content: cleanedSlices.map(s => s.content).join("\n\n"), cacheHit: false };
   }
 
-  return result;
+  return { ...result, cacheHit: false };
 }

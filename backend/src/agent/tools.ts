@@ -141,7 +141,7 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
               },
               risk_level: {
                 type: "string",
-                enum: ["high", "medium", "low", "unknown"],
+                enum: ["breaking", "high", "medium", "low", "unknown", "safe"],
                 description:
                   "Preliminary risk classification: high (breaking API changes or " +
                   "deprecated package), medium (behaviour changes requiring testing), " +

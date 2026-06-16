@@ -1,0 +1,11 @@
+{
+  "extends": "./worker/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@backend/*": ["./backend/src/*"],
+      "@upgrade-advisor/shared": ["./packages/shared/src/index.ts"]
+    }
+  },
+  "include": ["eval.ts", "worker/src/**/*.ts", "backend/src/**/*.ts"]
+}
