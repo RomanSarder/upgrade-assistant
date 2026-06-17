@@ -11,6 +11,20 @@ COPY package.json package-lock.json ./
 COPY worker/package.json ./worker/
 COPY packages/shared/package.json ./packages/shared/
 
+# TRADEOFF: backend/package.json is copied so npm installs backend's
+# dependencies and hoists them alongside the worker's own deps. This is
+# necessary because the worker imports backend TypeScript source directly via
+# @backend/* path aliases (tsx resolves them at runtime without compilation),
+# which makes it implicitly depend on every npm package backend/src uses.
+#
+# The clean production approach is to extract the shared surface
+# (changelog pipeline, db schema, agent tools) into a proper workspace package
+# (e.g. packages/backend-core) that both backend and worker declare as an
+# explicit dependency. That way each workspace owns its own dep graph and
+# backend's server-only packages (fastify, etc.) are never installed in the
+# worker image.
+COPY backend/package.json ./backend/
+
 RUN npm ci
 
 COPY packages/shared/ ./packages/shared/
