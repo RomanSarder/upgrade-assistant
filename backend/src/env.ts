@@ -10,6 +10,8 @@ declare module "fastify" {
       FRONTEND_URL?: string;
       ANTHROPIC_API_KEY: string;
       VOYAGE_API_KEY: string;
+      RESEND_API_KEY?: string;
+      RESEND_FROM_EMAIL?: string;
     };
   }
 }
@@ -17,6 +19,13 @@ declare module "fastify" {
 const schema = {
   type: "object",
   required: ["DATABASE_URL", "REDIS_URL", "NODE_ENV", "GITHUB_TOKEN", "ANTHROPIC_API_KEY", "VOYAGE_API_KEY"],
+  if: {
+    properties: { NODE_ENV: { const: "production" } },
+    required: ["NODE_ENV"],
+  },
+  then: {
+    required: ["RESEND_API_KEY", "RESEND_FROM_EMAIL"],
+  },
   properties: {
     DATABASE_URL: {
       type: "string",
@@ -38,6 +47,12 @@ const schema = {
       type: 'string'
     },
     VOYAGE_API_KEY: {
+      type: 'string'
+    },
+    RESEND_API_KEY: {
+      type: 'string'
+    },
+    RESEND_FROM_EMAIL: {
       type: 'string'
     }
   },

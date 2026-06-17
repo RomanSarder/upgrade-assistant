@@ -4,6 +4,7 @@ import { addToDate } from "../utils";
 import { eq } from "drizzle-orm";
 import authenticatePlugin from "./authenticate-plugin";
 import fastifyPlugin from "fastify-plugin";
+import { sendMagicLinkEmail } from "../email";
 
 export default fastifyPlugin(async (fastify) => {
   fastify.register(authenticatePlugin)
@@ -42,7 +43,7 @@ export default fastifyPlugin(async (fastify) => {
         expiresAt: addToDate(new Date(), { minutes: 15 })
       }).returning()
 
-      fastify.log.debug({ token: magicLink.token }, "Magic Link Token")
+      await sendMagicLinkEmail(email, magicLink.token)
     })
 
     fastify.post<{ Querystring: { token: string } }>("/token/verify", {
