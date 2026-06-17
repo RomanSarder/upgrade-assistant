@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { Queue } from "bullmq";
 import { eq } from "drizzle-orm";
-import { users } from "../db/schema";
+import { users } from "@upgrade-advisor/backend-core/db/schema";
 import streamPlugin from "./stream";
 import { DEMO_BUDGET_USD } from "@upgrade-advisor/shared";
 

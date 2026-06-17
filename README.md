@@ -104,6 +104,20 @@ The agent loop per package:
 
 See [`backend/src/changelog/README.md`](backend/src/changelog/README.md) for a detailed walkthrough of how changelogs are discovered, cleaned, chunked, embedded, and cached.
 
+### Monorepo layout
+
+```
+packages/shared/        Shared types and constants (frontend + backend)
+packages/backend-core/  Shared backend logic (backend + worker)
+                        — DB schema (Drizzle), changelog pipeline,
+                          agent tools, embeddings
+backend/                Fastify API server (imports backend-core)
+worker/                 BullMQ worker (imports backend-core via tsx path aliases)
+frontend/               React + Vite SPA
+```
+
+`packages/backend-core` is the bridge between `backend` and `worker`. Both declare it as a workspace dependency. The worker resolves it at runtime via tsx tsconfig path aliases (no compilation step required for the worker); the backend compiles it as part of its TypeScript build.
+
 ---
 
 ## Local setup

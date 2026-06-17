@@ -10,10 +10,14 @@ COPY package.json package-lock.json ./
 
 COPY backend/package.json ./backend/
 COPY packages/shared/package.json ./packages/shared/
+COPY packages/backend-core/package.json ./packages/backend-core/
 
 RUN npm ci
 
 COPY packages/shared/ ./packages/shared/
+COPY packages/backend-core/src/ ./packages/backend-core/src/
+COPY packages/backend-core/tsconfig.json ./packages/backend-core/
+COPY packages/backend-core/tsconfig.build.json ./packages/backend-core/
 
 COPY backend/src/ ./backend/src/
 COPY backend/tsconfig.json ./backend/
@@ -25,6 +29,9 @@ COPY backend/drizzle/ ./backend/drizzle/
 # package.json exports point to ./dist/index.js — that file must exist before
 # Node can require it at runtime.
 RUN npm run build --workspace=packages/shared
+
+# Build backend-core so its dist/ is available for the compiled backend at runtime.
+RUN npm run build --workspace=packages/backend-core
 
 # Compile the backend TypeScript.
 # tsconfig outDir is "dist" (relative to backend/), but because the tsconfig's
@@ -55,6 +62,10 @@ COPY --from=builder --chown=nodejs:nodejs /app/backend/drizzle ./backend/drizzle
 # ../../packages/shared. For Node to resolve that symlink at runtime, the actual
 # packages/shared directory (with its compiled dist/) must exist on the filesystem.
 COPY --from=builder --chown=nodejs:nodejs /app/packages/shared ./packages/shared
+
+# Copy backend-core with its compiled dist/ so the built backend can resolve
+# require("@upgrade-advisor/backend-core/...") at runtime via the workspace symlink.
+COPY --from=builder --chown=nodejs:nodejs /app/packages/backend-core ./packages/backend-core
 
 COPY --chmod=755 backend/entrypoint.sh /app/entrypoint.sh
 

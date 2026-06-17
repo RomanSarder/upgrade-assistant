@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { splitIntoChunks } from "./embeddings";
+import { splitIntoChunks } from "@upgrade-advisor/backend-core/changelog/embeddings";
 
 // ---------------------------------------------------------------------------
 // Helpers

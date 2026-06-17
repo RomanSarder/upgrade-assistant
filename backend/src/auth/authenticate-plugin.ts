@@ -1,7 +1,7 @@
 import fp from "fastify-plugin";
 import { FastifyRequest, FastifyReply } from "fastify";
 import { eq } from "drizzle-orm";
-import { sessions } from "../db/schema";
+import { sessions } from "@upgrade-advisor/backend-core/db/schema";
 import { hashSecret } from "./utils";
 import { addToDate } from "../utils";
 

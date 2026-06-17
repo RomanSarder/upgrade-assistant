@@ -3,7 +3,7 @@ import Redis from "ioredis";
 import semver from "semver";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from "@backend/db/schema";
+import * as schema from "@upgrade-advisor/backend-core/db/schema";
 import { env } from "../env";
 import { rootLogger } from "../logger";
 

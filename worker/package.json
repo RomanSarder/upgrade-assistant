@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
+    "@upgrade-advisor/backend-core": "*",
     "tsx": "^4.22.4",
     "bullmq": "^5",
     "dotenv": "^17.4.2",
@@ -16,7 +17,6 @@
     "pino": "^9",
     "postgres": "^3.4.9",
     "semver": "^7.7.2",
-    "voyageai": "^0.3.1",
     "zod": "^3"
   },
   "devDependencies": {

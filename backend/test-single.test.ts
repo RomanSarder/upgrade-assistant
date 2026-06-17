@@ -11,7 +11,7 @@ vi.mock("bullmq", () => ({
 }));
 
 function build() {
-  const app = buildApp(mockDb(null));
+  const app = buildApp(mockDb([]));
   app.register(multipart);
   app.register(packagesPlugin);
   return app;

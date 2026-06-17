@@ -1,10 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Logger } from "pino";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { AGENT_TOOLS } from "@backend/agent/tools";
-import { fetchChangelogWithCache } from "@backend/changelog/cached-fetch";
-import { queryChangelog } from "@backend/changelog/repository";
-import * as schema from "@backend/db/schema";
+import { AGENT_TOOLS } from "@upgrade-advisor/backend-core/agent/tools";
+import { fetchChangelogWithCache } from "@upgrade-advisor/backend-core/changelog/cached-fetch";
+import { queryChangelog } from "@upgrade-advisor/backend-core/changelog/repository";
+import * as schema from "@upgrade-advisor/backend-core/db/schema";
 
 type Db = PostgresJsDatabase<typeof schema>;
 

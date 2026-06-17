@@ -1,0 +1,32 @@
+{
+  "name": "@upgrade-advisor/backend-core",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
+    "drizzle-orm": "^0.45.2",
+    "hosted-git-info": "^4.1.0",
+    "semver": "^7.7.2",
+    "voyageai": "^0.3.1"
+  },
+  "devDependencies": {
+    "@types/hosted-git-info": "^3.0.5",
+    "@types/node": "^25.9.2",
+    "@types/semver": "^7.7.1",
+    "postgres": "^3.4.9",
+    "typescript": "~5.9.2"
+  }
+}

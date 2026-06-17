@@ -6,8 +6,8 @@ import postgres from "postgres";
 import Redis from "ioredis";
 import { and, eq, sql } from "drizzle-orm";
 import { runPackageAgentLoop, type SynthesiseFinding, INPUT_COST_PER_MILLION_TOKENS, OUTPUT_COST_PER_MILLION_TOKENS } from "./run-package";
-import * as schema from "@backend/db/schema";
-import { packages, upgradeRecommendations, analysisRuns, users } from "@backend/db/schema";
+import * as schema from "@upgrade-advisor/backend-core/db/schema";
+import { packages, upgradeRecommendations, analysisRuns, users } from "@upgrade-advisor/backend-core/db/schema";
 import { DEMO_BUDGET_USD } from "@upgrade-advisor/shared";
 
 type Db = PostgresJsDatabase<typeof schema>;

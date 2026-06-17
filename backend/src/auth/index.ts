@@ -1,4 +1,4 @@
-import { magicLinkTokens, sessions, users } from "../db/schema";
+import { magicLinkTokens, sessions, users } from "@upgrade-advisor/backend-core/db/schema";
 import { generateSecureRandomString, hashSecret } from "./utils";
 import { addToDate } from "../utils";
 import { eq } from "drizzle-orm";

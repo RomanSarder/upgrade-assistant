@@ -1,7 +1,7 @@
 import fp from "fastify-plugin";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "./schema";
+import * as schema from "@upgrade-advisor/backend-core/db/schema";
 
 declare module "fastify" {
   interface FastifyInstance {
