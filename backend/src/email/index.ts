@@ -69,7 +69,7 @@ function buildMagicLinkHtml(verifyUrl: string): string {
 }
 
 export async function sendMagicLinkEmail(email: string, token: string): Promise<void> {
-  let frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:5173";
+  let frontendUrl = process.env.FRONTEND_PUBLIC_URL ?? "http://localhost:5173";
   if (process.env.NODE_ENV === "production") {
     frontendUrl = frontendUrl.replace(/^http:\/\//, "https://");
   }

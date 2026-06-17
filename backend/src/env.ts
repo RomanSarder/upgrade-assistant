@@ -8,6 +8,7 @@ declare module "fastify" {
       REDIS_URL: string;
       NODE_ENV: "development" | "production" | "test";
       FRONTEND_URL?: string;
+      FRONTEND_PUBLIC_URL?: string;
       ANTHROPIC_API_KEY: string;
       VOYAGE_API_KEY: string;
       RESEND_API_KEY?: string;
@@ -39,6 +40,9 @@ const schema = {
     },
     FRONTEND_URL: {
       type: "string",
+    },
+    FRONTEND_PUBLIC_URL: {
+      type: 'string',
     },
     GITHUB_TOKEN: {
       type: 'string',
