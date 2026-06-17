@@ -20,6 +20,7 @@ const stream: FastifyPluginAsync = async (fastify) => {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
       });
 
       const channel = `job:${jobId}`;
@@ -27,9 +28,14 @@ const stream: FastifyPluginAsync = async (fastify) => {
 
       let closed = false;
 
+      const heartbeat = setInterval(() => {
+        if (!closed) reply.raw.write(": heartbeat\n\n");
+      }, 30_000);
+
       function cleanup() {
         if (closed) return;
         closed = true;
+        clearInterval(heartbeat);
         subscriber.unsubscribe(channel).catch(() => {});
         subscriber.quit().catch(() => {});
         reply.raw.end();
