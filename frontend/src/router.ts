@@ -1,14 +1,25 @@
-import { createRouter, createRoute, createRootRoute } from "@tanstack/react-router";
+import { createRouter, createRoute, createRootRoute, Outlet, redirect } from "@tanstack/react-router";
+import { apiClient, ApiError } from "./shared/api";
 import App from "./App";
 import { SignInPage } from "./auth/SignInPage";
 import { VerifyPage } from "./auth/VerifyPage";
 
-const rootRoute = createRootRoute();
+const rootRoute = createRootRoute({ component: Outlet });
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: App,
+  beforeLoad: async () => {
+    try {
+      await apiClient("/auth/me");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        throw redirect({ to: "/sign-in" });
+      }
+      throw err;
+    }
+  },
 });
 
 const signInRoute = createRoute({

@@ -46,6 +46,10 @@ export default fastifyPlugin(async (fastify) => {
       await sendMagicLinkEmail(email, magicLink.token)
     })
 
+    fastify.get("/me", { preHandler: fastify.authenticate }, async () => {
+      return {};
+    })
+
     fastify.post<{ Querystring: { token: string } }>("/token/verify", {
       schema: {
         querystring: {
