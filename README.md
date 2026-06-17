@@ -118,6 +118,25 @@ frontend/               React + Vite SPA
 
 `packages/backend-core` is the bridge between `backend` and `worker`. Both declare it as a workspace dependency. The worker resolves it at runtime via tsx tsconfig path aliases (no compilation step required for the worker); the backend compiles it as part of its TypeScript build.
 
+## What I would do next
+
+**Anthropic rate limiting**
+
+Analysis jobs currently run as a single loop per repo. Under concurrent load, multiple jobs spike Anthropic API calls simultaneously and hit rate limits. The fix: move per-package analysis into individual BullMQ jobs with `concurrency: 5` on the worker, so throughput is controlled proactively. Backoff on 429 as a secondary safety net for token spikes on large changelogs.
+
+**GitHub rate limiting**
+
+Two changes, different effort levels:
+
+- Add a GitHub token to authenticated requests — 5,000 requests/hour instead of 60. One environment variable.
+- Deduplicate changelog fetches via Redis. 50 users analysing the same popular package currently triggers 50 GitHub API calls for identical data. A Redis check before each fetch collapses that to one call per package per TTL window.
+
+The UI also doesn't distinguish between "no changelog exists" and "GitHub blocked us temporarily." Those need separate states — one is permanent, one resolves on retry.
+
+**Linear integration**
+
+The agent already writes the breaking change description and migration notes as part of its reasoning. That content should be one click away from becoming a tracked engineering task. A Linear integration would let you create a ticket directly from a breaking change row — agent reasoning pre-populated as the ticket body, no copy-paste.
+
 ---
 
 ## Local setup
