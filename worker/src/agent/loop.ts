@@ -102,7 +102,7 @@ export async function runAgentLoop(jobId: string, repoId: string, userId: string
       }
 
       pkgLog.info({ durationMs: Date.now() - pkgStart, riskLevel }, "package analysis completed");
-      emit({ type: "package_done", payload: { package: pkg.packageName, risk_level: riskLevel, breaking_changes: breakingChanges } });
+      emit({ type: "package_done", payload: { package: pkg.packageName, from_version: pkg.fromVersion, to_version: pkg.toVersion, risk_level: riskLevel, breaking_changes: breakingChanges } });
 
       const runningCostUsd =
         (totalInputTokens / 1_000_000) * INPUT_COST_PER_MILLION_TOKENS +

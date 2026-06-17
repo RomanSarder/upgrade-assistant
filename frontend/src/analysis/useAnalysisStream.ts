@@ -130,12 +130,12 @@ export function useAnalysisStream(
           break;
         }
         case "package_done": {
-          const p = event.payload as { package: string; risk_level: string; breaking_changes?: string | null };
-          const meta = packageMetaRef.current[p.package] ?? { from_version: "?", to_version: "?" };
+          const p = event.payload as { package: string; from_version?: string; to_version?: string; risk_level: string; breaking_changes?: string | null };
+          const cached = packageMetaRef.current[p.package];
           const row: AnalysisRow = {
             package: p.package,
-            from_version: meta.from_version,
-            to_version: meta.to_version,
+            from_version: p.from_version ?? cached?.from_version ?? "?",
+            to_version: p.to_version ?? cached?.to_version ?? "?",
             risk_level: p.risk_level as RiskLevel,
             breaking_changes: p.breaking_changes ?? undefined,
           };
