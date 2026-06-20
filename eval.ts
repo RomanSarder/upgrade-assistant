@@ -6,8 +6,8 @@ import pino from "pino";
 import fs from "fs";
 import path from "path";
 import { and, count, eq } from "drizzle-orm";
-import * as schema from "./backend/src/db/schema";
-import { changelogChunks } from "./backend/src/db/schema/changelog-chunks";
+import * as schema from "@upgrade-advisor/backend-core/db/schema";
+import { changelogChunks } from "@upgrade-advisor/backend-core/db/schema/changelog-chunks";
 import {
   runPackageAgentLoop,
   type TraceEvent,

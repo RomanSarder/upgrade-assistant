@@ -4,7 +4,9 @@
     "baseUrl": ".",
     "paths": {
       "@backend/*": ["./backend/src/*"],
-      "@upgrade-advisor/shared": ["./packages/shared/src/index.ts"]
+      "@upgrade-advisor/shared": ["./packages/shared/src/index.ts"],
+      "@upgrade-advisor/backend-core": ["./packages/backend-core/src/index.ts"],
+      "@upgrade-advisor/backend-core/*": ["./packages/backend-core/src/*"]
     }
   },
   "include": ["eval.ts", "worker/src/**/*.ts", "backend/src/**/*.ts"]
