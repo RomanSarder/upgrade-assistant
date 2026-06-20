@@ -3,11 +3,11 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { and, asc, eq, gt, sql } from "drizzle-orm";
 import { cosineDistance } from "drizzle-orm/sql/functions";
-import { changelogChunks } from "../src/db/schema/changelog-chunks";
-import { embed, chunkAndEmbed } from "../src/changelog/embeddings";
-import { cleanChangelog } from "../src/changelog/clean-changelog";
-import { findCached, insertChunks } from "../src/changelog/repository";
-import { fetchChangelog } from "../src/changelog/fetch";
+import { changelogChunks } from "@upgrade-advisor/backend-core/db/schema/changelog-chunks";
+import { embed, chunkAndEmbed } from "@upgrade-advisor/backend-core/changelog/embeddings";
+import { cleanChangelog } from "@upgrade-advisor/backend-core/changelog/clean-changelog";
+import { findCached, insertChunks } from "@upgrade-advisor/backend-core/changelog/repository";
+import { fetchChangelog } from "@upgrade-advisor/backend-core/changelog/fetch";
 
 const DIVIDER = "━".repeat(40);
 const TOP_K = 5;
@@ -36,41 +36,40 @@ async function withRetry<T>(label: string, fn: () => Promise<T>, maxAttempts = 5
 }
 
 const TEST_CASES = [
-  // {
-  //   package: "chalk",
-  //   from: "4.0.0",
-  //   to: "5.0.0",
-  //   keywords: ["ESM", "require", "CommonJS"],
-  // },
-  // {
-  //   package: "uuid",
-  //   from: "7.0.0",
-  //   to: "8.0.0",
-  //   keywords: ["named", "export", "default"],
-  // },
-  // {
-  //   package: "axios",
-  //   from: "0.27.2",
-  //   to: "1.0.0",
-  //   keywords: ["CancelToken", "interceptor"],
-  // },
-  // {
-  //   package: "express",
-  //   from: "4.0.0",
-  //   to: "5.0.0",
-  //   keywords: ["path-to-regexp", "deprecated", "Node"],
-  // },
-  // {
-  //   package: "eslint",
-  //   from: "7.0.0",
-  //   to: "8.0.0",
-  //   keywords: ["flat", "config", "plugin"],
-  // },
+  {
+    package: "chalk",
+    from: "4.0.0",
+    to: "5.0.0",
+    keywords: ["ESM", "require", "CommonJS"],
+  },
+  {
+    package: "uuid",
+    from: "7.0.0",
+    to: "8.0.0",
+    keywords: ["named", "export", "default"],
+  },
+  {
+    package: "axios",
+    from: "0.27.2",
+    to: "1.0.0",
+    keywords: ["CancelToken", "interceptor"],
+  },
+  {
+    package: "express",
+    from: "4.0.0",
+    to: "5.0.0",
+    keywords: ["path-to-regexp", "deprecated", "Node"],
+  },
+  {
+    package: "eslint",
+    from: "7.0.0",
+    to: "8.0.0",
+    keywords: ["flat", "config", "plugin"],
+  },
   {
     package: "@babel/core",
     from: "7.0.0",
     to: "7.20.0",
-    // keywords: ["source map", "top-level await", "preset", "plugin"],
     keywords: ["source map", "top-level await"],
   }
 ];
@@ -79,8 +78,7 @@ async function runTest(
   db: ReturnType<typeof drizzle>,
   tc: (typeof TEST_CASES)[number],
 ): Promise<boolean> {
-  const queryText = `were there any changes to source map generation in ${tc.package} between version ${tc.from} and ${tc.to}?`
-  // const queryText = `what breaking changes exist in ${tc.package} between version ${tc.from} and ${tc.to}?`;
+  const queryText = `what breaking changes exist in ${tc.package} between version ${tc.from} and ${tc.to}?`;
 
   console.log(`\n${DIVIDER}`);
   console.log(`PACKAGE: ${tc.package}  (${tc.from} → ${tc.to})`);
@@ -151,7 +149,7 @@ async function main() {
     for (const tc of TEST_CASES) {
       const cached = await findCached(db, tc.package, tc.from, tc.to);
       if (cached) {
-        console.log(`${tc.package}: cache hit (${cached.source})`);
+        console.log(`${tc.package}: cache hit (${"source" in cached ? cached.source : cached.status})`);
         continue;
       }
 
