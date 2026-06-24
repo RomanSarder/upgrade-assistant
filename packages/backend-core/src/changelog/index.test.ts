@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { fetchChangelog } from "@upgrade-advisor/backend-core/changelog/fetch";
+import { fetchChangelog } from "./fetch";
 
 const OWNER = "owner";
 const REPO = "myrepo";

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cleanChangelog } from "@upgrade-advisor/backend-core/changelog/clean-changelog";
+import { cleanChangelog } from "./clean-changelog";
 
 // ---------------------------------------------------------------------------
 // Filter 1 – junk section removal
